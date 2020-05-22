@@ -7,7 +7,7 @@ import operator
 from dataclasses import dataclass
 from datetime import datetime
 from math import sqrt
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from dacite import from_dict
 from fitparse import FitFile
@@ -167,7 +167,9 @@ def distance(track_point: Track_point, segment_point: Segment_point) -> float:
     return to_return
 
 
-def match(track: List[Track_point], segments: List[Segment]) -> None:
+def match(
+    track: List[Track_point], segments: List[Segment], args: argparse.Namespace
+) -> None:
     # TODO Segments can be matched from starting point and climbing, since only
     # interested in climing: 1/ Set lowest/starting point only. 2/ Read all
     # trajectories.  3/ For those passing by this lowest point (deltastart), 4/ identify
@@ -181,30 +183,66 @@ def match(track: List[Track_point], segments: List[Segment]) -> None:
     # that are periodically recomputed to take into account new tracks as they are
     # arred, 12/ and compare each new track fo these inferred_segments.
 
-    deltas = []
-
+    # TODO use geopy to compute exact distances for those below a threshold
     # Distance in semicircles for now, but bad since:
     # Length in meters of 1° of latitude = always 111.32 km
     # Length in meters of 1° of longitude = 40075 km * cos( latitude ) / 360
-    # TODO use geopy to compute exact distances for those below a threshold
 
-    # threshold = 3000
+    threshold = 5000
+
+    def find_candidates(
+        track: List[Track_point], segpoint: Segment_point, threshold: int
+    ) -> List[Dict[str, Any]]:
+        return sorted(
+            [
+                {
+                    "track_point": track_point,
+                    "dist_to_segment": dist,
+                    "index_in_track": idx,
+                }
+
+                for idx, track_point in enumerate(track)
+
+                if (dist := int(distance(track_point, segpoint))) < threshold
+            ],
+            key=lambda x: x["dist_to_segment"],
+        )[:3]
 
     for segment in segments[:1]:
         logger.warning("Look for %s", segment.name)
 
-        for idx, track_point in enumerate(track):
-            to_add = (
-                idx,
-                int(distance(track_point, segment.start)),
-                int(distance(track_point, segment.stop)),
-            )
-            deltas.append(to_add)
-        __import__("ipdb").set_trace()
-        with open("toto.csv", "w") as f_handler:
-            f_handler.write("\n".join([",".join([str(x) for x in d]) for d in deltas]))
-    # min_index, min_value = min(enumerate(values), key=operator.itemgetter(1))
-    # max_index, max_value = max(enumerate(values), key=operator.itemgetter(1))
+        start_candidates = find_candidates(track, segment.start, threshold)
+        stop_candidates = find_candidates(track, segment.stop, threshold)
+
+        if args.verbose:
+            deltas = []
+
+            for idx, track_point in enumerate(track):
+                to_add = (
+                    idx,
+                    int(distance(track_point, segment.start)),
+                    int(distance(track_point, segment.stop)),
+                )
+                deltas.append(to_add)
+            with open(f"distances.{segment.name}.csv", "w") as f_handler:
+                f_handler.write(
+                    "\n".join([",".join([str(x) for x in d]) for d in deltas])
+                )
+
+        # FIXME Select best candidate: chimeric point, interpolated from candidates?
+        start_point = start_candidates[0]
+        stop_point = stop_candidates[0]
+
+        logger.warning(
+            "%s found %1.2f km / %s",
+            segment.name,
+            (stop_point["track_point"].distance - start_point["track_point"].distance)
+            / 1000,
+            stop_point["track_point"].timestamp - start_point["track_point"].timestamp,
+        )
+        logger.debug(
+            "Start: %s\nStop %s", start_point["track_point"], stop_point["track_point"]
+        )
 
 
 def main() -> None:
@@ -212,7 +250,7 @@ def main() -> None:
     segments = load_segments()
     logger.warning("%s Segments loaded", len(segments))
     track = loadfile("2020-05-21-08-11-47.fit")
-    match(track, segments)
+    match(track, segments, args)
     # FIXME match track points with segment start/stop
     pass
 
