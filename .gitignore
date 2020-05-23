@@ -1,0 +1,6 @@
+*.csv
+*.fit
+.cache/*
+activities
+csv/*
+segments.json

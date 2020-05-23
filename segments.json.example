@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Barbiere-Tourniol",
+    "debug": false,
+    "start": {
+      "latitude": 44.95267,
+      "longitude": 5.14394,
+      "altitude": 0,
+      "tolerance": 5
+    },
+    "stop": {
+      "latitude": 44.9195,
+      "longitude": 5.18517,
+      "altitude": 0,
+      "tolerance": 5
+    }
+  },
+  {
+    "name": "Cavalli-CoteBlanche",
+    "debug": false,
+    "start": {
+      "latitude": 44.87345396541059,
+      "longitude": 5.078331269323826,
+      "altitude": 0,
+      "tolerance": 0
+    },
+    "stop": {
+      "latitude": 44.835896920412786,
+      "longitude": 5.1063779555261135,
+      "altitude": 0,
+      "tolerance": 0
+    }
+  }
+]
