@@ -12,17 +12,23 @@ from dacite import from_dict
 from dacite.exceptions import MissingValueError
 
 from fitlib import (
+    Activity,
     Matched_track_point,
     Segment,
-    Segment_point,
+    Segment_definition,
+    Segment_definition_point,
     Track,
     Track_point,
     get_segment_debug_handler,
     get_segment_tag,
     get_segment_timing_handler,
+    load_activities,
     load_file,
+    load_segment_definitions,
     load_segments,
     semicircles_to_degrees,
+    write_activities,
+    write_segments,
 )
 
 
@@ -166,22 +172,28 @@ def get_csv_filename(track_name: str, segment_name: str) -> str:
     return f"./csv/distances.{track_tag}.{segment_tag}.csv"
 
 
-def distance(track_point: Track_point, segment_point: Segment_point) -> float:
-    d2_long = (track_point.position_long - segment_point.longitude) ** 2
+def distance(
+    track_point: Track_point, segment_point: Segment_definition_point
+) -> float:
     d2_lat = (track_point.position_lat - segment_point.latitude) ** 2
+    d2_long = (track_point.position_long - segment_point.longitude) ** 2
     to_return = sqrt(d2_lat + d2_long)
 
     return to_return
 
 
-def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> None:
-    # TODO Autodetect segments
-    # TODO Import segments
+def match(
+    track: Track,
+    segment_definitions: List[Segment_definition],
+    args: argparse.Namespace,
+) -> Tuple[Activity, List[Segment]]:
+    # TODO Autodetect segment_definitions
+    # TODO Import segment_definitions
     # TODO Compute exact distances with geopy
     threshold = 5000
 
     def find_candidates(
-        track: List[Track_point], segpoint: Segment_point, threshold: int
+        track: List[Track_point], segpoint: Segment_definition_point, threshold: int
     ) -> List[Matched_track_point]:
         return [
             from_dict(
@@ -198,8 +210,20 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
             if (dist := int(distance(track_point, segpoint))) < threshold
         ]
 
-    for segment in segments:
-        logger.info("Searching for segment %s", segment.name)
+    activity = from_dict(
+        data_class=Activity,
+        data={
+            "name": track.name,
+            "year": track.track_points[0].timestamp.year,
+            "start_time": track.track_points[0].timestamp,
+            "duration": track.track_points[-1].timestamp
+            - track.track_points[0].timestamp,
+        },
+    )
+    segments_challenged = []
+
+    for segment_definition in segment_definitions:
+        logger.debug("Searching for segment_definition %s", segment_definition.name)
 
         if args.verbose:
             deltas = []
@@ -208,23 +232,29 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
                 to_add = (
                     idx,
                     track_point.timestamp,
-                    int(distance(track_point, segment.start)),
-                    int(distance(track_point, segment.stop)),
+                    int(distance(track_point, segment_definition.start)),
+                    int(distance(track_point, segment_definition.stop)),
                 )
                 deltas.append(to_add)
 
             if deltas:
-                with open(get_csv_filename(track.name, segment.name), "w") as f_handler:
+                with open(
+                    get_csv_filename(track.name, segment_definition.name), "w"
+                ) as f_handler:
                     f_handler.write(
                         "\n".join([",".join([str(x) for x in d]) for d in deltas])
                     )
 
-        if segment.debug:
-            segment_debug_handler: TextIO = get_segment_debug_handler(segment)
-        segment_timing_handler: TextIO = get_segment_timing_handler(segment)
+        if segment_definition.debug:
+            segment_debug_handler: TextIO = get_segment_debug_handler(
+                segment_definition
+            )
+        segment_timing_handler: TextIO = get_segment_timing_handler(segment_definition)
 
         logger.debug("Looking for start points")
-        start_candidates = find_candidates(track.track_points, segment.start, threshold)
+        start_candidates = find_candidates(
+            track.track_points, segment_definition.start, threshold
+        )
 
         if not start_candidates:
             logger.debug("None found, segment not started")
@@ -232,7 +262,9 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
             continue
 
         logger.debug("Looking for stop points")
-        stop_candidates = find_candidates(track.track_points, segment.stop, threshold)
+        stop_candidates = find_candidates(
+            track.track_points, segment_definition.stop, threshold
+        )
 
         if not stop_candidates:
             logger.debug("None found, segment not stopped")
@@ -244,7 +276,7 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
         logger.debug("Found %s attempt(s) for this segment", len(challenges))
 
         for virtual_start, virtual_stop in challenges:
-            if segment.debug:
+            if segment_definition.debug:
                 segment_debug_handler.write(
                     "%s,%s,%s\n%s,%s,%s\n"
                     % (
@@ -272,6 +304,18 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
                 virtual_stop.track_point.timestamp - virtual_start.track_point.timestamp
             )
 
+            segments_challenged.append(
+                from_dict(
+                    data_class=Segment,
+                    data={
+                        "activity_name": track.name,
+                        "segment_name": segment_definition.name,
+                        "duration": virtual_timing,
+                        "start_time": virtual_start.track_point.timestamp,
+                    },
+                )
+            )
+
             segment_timing_handler.write(
                 "%s,%2.2f,%3.2f\n"
                 % (track.name, virtual_distance, virtual_timing.total_seconds() / 60)
@@ -279,7 +323,7 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
             logger.warning(
                 "%s : %s found %1.2f km / %s",
                 track.name,
-                segment.name,
+                segment_definition.name,
                 virtual_distance,
                 virtual_timing,
             )
@@ -289,17 +333,27 @@ def match(track: Track, segments: List[Segment], args: argparse.Namespace) -> No
                 virtual_stop.track_point,
             )
 
-        if segment.debug:
+        if segment_definition.debug:
             segment_debug_handler.close()
+
+    return (activity, segments_challenged)
 
 
 def main() -> None:
     args = parse_args()
-    segments = load_segments()
-    logger.warning("%s Segments loaded", len(segments))
-    # TODO Add metrics: avg heart rate, avg cadence, etc.?
+    segment_definitions: List[Segment_definition] = load_segment_definitions()
+    logger.warning("%s segment definitions loaded", len(segment_definitions))
+
+    previous_activities: List[Activity] = load_activities()
+    logger.warning("%s previous activities loaded", len(previous_activities))
+
+    segments: List[Segment] = load_segments()
+    logger.warning("%s previous segments loaded", len(segments))
+
+    __import__("ipdb").set_trace()
 
     for filename in args.fitfiles:
+        # FIXME Recompute only what's needed !
         try:
             track = load_file(filename)
         except MissingValueError as e:
@@ -308,7 +362,12 @@ def main() -> None:
             continue
 
         logger.warning("Loading %s", filename)
-        match(track, segments, args)
+        activity, segments_challenged = match(track, segment_definitions, args)
+        previous_activities.append(activity)
+        segments.extend(segments_challenged)
+
+    write_activities(previous_activities)
+    write_segments(segments)
 
 
 if __name__ == "__main__":

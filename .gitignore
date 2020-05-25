@@ -2,5 +2,7 @@
 *.fit
 .cache/*
 activities
+activities.json
 csv/*
+segment_definitions.json
 segments.json

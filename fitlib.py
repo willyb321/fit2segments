@@ -2,16 +2,18 @@ import bz2
 import json
 import pickle
 import re
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, TextIO
 
-from dacite import from_dict
+from dacite import Config, from_dict
 from fitparse import FitFile
 
 DEFAULT_CACHE_PATH = "./.cache"
-DEFAULT_SEGMENT_FILENAME = "segments.json"
+DEFAULT_SEGMENT_DEFINITIONS_FILENAME = "segment_definitions.json"
+DEFAULT_SEGMENTS_FILENAME = "segments.json"
+DEFAULT_ACTIVITIES_FILENAME = "activities.json"
 
 # https://docs.microsoft.com/en-us/previous-versions/windows/embedded/cc510650(v=msdn.10)
 
@@ -20,7 +22,23 @@ DEGREES_TO_SEMICIRCLES: float = pow(2, 31) / 180
 
 
 @dataclass
-class Segment_point:
+class Activity:
+    name: str
+    year: int
+    start_time: datetime
+    duration: timedelta
+
+
+@dataclass
+class Segment:
+    activity_name: str
+    segment_name: str
+    start_time: datetime
+    duration: timedelta
+
+
+@dataclass
+class Segment_definition_point:
     latitude: float
     longitude: float
     altitude: float
@@ -28,11 +46,11 @@ class Segment_point:
 
 
 @dataclass
-class Segment:
+class Segment_definition:
     debug: bool
     name: str
-    start: Segment_point
-    stop: Segment_point
+    start: Segment_definition_point
+    stop: Segment_definition_point
 
 
 @dataclass
@@ -116,7 +134,7 @@ def get_segment_tag(segment_name: str) -> str:
     return re.sub(r"\W+", "", segment_name)
 
 
-def get_segment_timing_handler(segment: Segment) -> TextIO:
+def get_segment_timing_handler(segment: Segment_definition) -> TextIO:
     debug_file = Path("%s_timings.csv" % get_segment_tag(segment.name))
 
     if not debug_file.exists():
@@ -127,7 +145,7 @@ def get_segment_timing_handler(segment: Segment) -> TextIO:
     return to_return
 
 
-def get_segment_debug_handler(segment: Segment) -> TextIO:
+def get_segment_debug_handler(segment: Segment_definition) -> TextIO:
     debug_file = Path("%s_debug_start.csv" % get_segment_tag(segment.name))
 
     if not debug_file.exists():
@@ -150,13 +168,109 @@ def get_segment_debug_handler(segment: Segment) -> TextIO:
     return to_return
 
 
-def load_segments(segment_filename: Optional[str] = None) -> List[Segment]:
+_TYPEHOOKS = {
+    datetime: datetime.fromisoformat,
+    timedelta: lambda i: timedelta(seconds=i),
+}
+
+
+def _encode_durations(x):
+
+    if isinstance(x, datetime):
+        return x.isoformat()
+    else:
+        return x.total_seconds()
+
+
+def load_segments(segments_filename: Optional[str] = None,) -> List[Segment]:
+    if segments_filename is None:
+        segments_filename = DEFAULT_SEGMENTS_FILENAME
+    segments_file = Path(segments_filename)
+    to_return = []
+
+    if segments_file.exists():
+        with segments_file.open() as f_handler:
+            # FIXME test hooks
+            to_return = [
+                from_dict(
+                    data_class=Segment, data=data, config=Config(type_hooks=_TYPEHOOKS),
+                )
+
+                for data in json.load(f_handler)
+            ]
+
+    return to_return
+
+
+def load_activities(activities_filename: Optional[str] = None,) -> List[Activity]:
+    if activities_filename is None:
+        activities_filename = DEFAULT_ACTIVITIES_FILENAME
+    activities_file = Path(activities_filename)
+    to_return = []
+
+    if activities_file.exists():
+        with activities_file.open() as f_handler:
+            # FIXME test hooks
+            to_return = [
+                from_dict(
+                    data_class=Activity,
+                    data=data,
+                    config=Config(type_hooks=_TYPEHOOKS),
+                )
+
+                for data in json.load(f_handler)
+            ]
+
+    return to_return
+
+
+def write_segments(
+    segments: List[Segment], segments_filename: Optional[str] = None,
+) -> None:
+    if segments_filename is None:
+        segments_filename = DEFAULT_SEGMENTS_FILENAME
+    segments_file = Path(segments_filename)
+    with segments_file.open("w") as f_handler:
+        # TODO should encode:
+        # - timedelta as total_seconds
+        # - datetimes as isoformat or timestamp
+        # pb: default= can handle a single function, which should check which one to use
+        json.dump(
+            [asdict(s) for s in segments],
+            f_handler,
+            indent=True,
+            default=_encode_durations,
+        )
+
+
+def write_activities(
+    activities: List[Activity], activities_filename: Optional[str] = None,
+) -> None:
+    if activities_filename is None:
+        activities_filename = DEFAULT_ACTIVITIES_FILENAME
+    activitys_file = Path(activities_filename)
+    with activitys_file.open("w") as f_handler:
+        # TODO should encode:
+        # - timedelta as total_seconds
+        # - datetimes as isoformat or timestamp
+        # pb: default= can handle a single function, which should check which one to use
+        json.dump(
+            [asdict(a) for a in activities],
+            f_handler,
+            indent=True,
+            default=_encode_durations,
+        )
+
+
+def load_segment_definitions(
+    segment_definitions_filename: Optional[str] = None,
+) -> List[Segment_definition]:
     """Load segments from input file"""
 
-    def convert_units(segment: Segment) -> Segment:
+    def convert_units(segment: Segment_definition) -> Segment_definition:
 
         old_start = segment.start
-        new_start = Segment_point(
+        new_start = Segment_definition_point(
             latitude=degrees_to_semicircles(old_start.latitude),
             longitude=degrees_to_semicircles(old_start.longitude),
             altitude=old_start.altitude,
@@ -164,7 +278,7 @@ def load_segments(segment_filename: Optional[str] = None) -> List[Segment]:
         )
 
         old_stop = segment.stop
-        new_stop = Segment_point(
+        new_stop = Segment_definition_point(
             latitude=degrees_to_semicircles(old_stop.latitude),
             longitude=degrees_to_semicircles(old_stop.longitude),
             altitude=old_stop.altitude,
@@ -176,11 +290,11 @@ def load_segments(segment_filename: Optional[str] = None) -> List[Segment]:
 
         return segment
 
-    if segment_filename is None:
-        segment_filename = DEFAULT_SEGMENT_FILENAME
-    with open(segment_filename) as f_handler:
+    if segment_definitions_filename is None:
+        segment_definitions_filename = DEFAULT_SEGMENT_DEFINITIONS_FILENAME
+    with open(segment_definitions_filename) as f_handler:
         return [
-            convert_units(from_dict(data_class=Segment, data=data))
+            convert_units(from_dict(data_class=Segment_definition, data=data))
 
             for data in json.load(f_handler)
         ]
