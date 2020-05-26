@@ -1,11 +1,13 @@
 import bz2
 import json
+import logging
 import pickle
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Union
 
 from dacite import Config, from_dict
 from fitparse import FitFile
@@ -33,6 +35,7 @@ class Activity:
 class Segment:
     activity_name: str
     segment_name: str
+    segment_uid: str
     start_time: datetime
     duration: timedelta
 
@@ -51,6 +54,10 @@ class Segment_definition:
     name: str
     start: Segment_definition_point
     stop: Segment_definition_point
+    uid: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.uid = sha256(f"{self.name}-{self.start}-{self.stop}".encode()).hexdigest()
 
 
 @dataclass
@@ -58,14 +65,14 @@ class Track_point:
     # TODO could unknown_61 or 66 be accuracy?
     altitude: float
     cadence: Optional[float]
-    distance: float
+    distance: Optional[float]
     enhanced_altitude: float
     enhanced_speed: Optional[float]
     fractional_cadence: Optional[float]
     heart_rate: Optional[float]
-    position_lat: float
-    position_long: float
-    speed: float
+    position_lat: Optional[float]
+    position_long: Optional[float]
+    speed: Optional[float]
     temperature: float
     timestamp: datetime
     unknown_61: Optional[float]
@@ -76,7 +83,6 @@ class Track_point:
 class Matched_track_point:
     track_point: Track_point
     dist_to_segment: float
-    index_in_track: int
     category: Optional[str]
 
 
@@ -84,6 +90,23 @@ class Matched_track_point:
 class Track:
     name: str
     track_points: List[Track_point]
+    gps_available: bool = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.gps_available = any(
+            [
+                hasattr(t, "position_lat")
+                and t.position_lat
+                and hasattr(t, "position_long")
+                and t.position_long
+
+                for t in self.track_points
+            ]
+        )
+
+
+def filename2activityname(fitfilename: str) -> str:
+    return Path(fitfilename).stem
 
 
 def load_file(fitfilename: str, cache_path_name: Optional[str] = None) -> Track:
@@ -104,13 +127,11 @@ def load_file(fitfilename: str, cache_path_name: Optional[str] = None) -> Track:
 
     if not cached_file.exists():
         to_write: Track = Track(
-            name=Path(fitfilename).stem,
+            name=filename2activityname(fitfilename),
             track_points=[
                 from_dict(data_class=Track_point, data=data.get_values())
 
                 for data in FitFile(fitfilename).get_messages("record")
-
-                if data.get("position_lat") and data.get("position_long")
             ],
         )
         with bz2.BZ2File(cached_file, "wb") as f_handler:
@@ -170,11 +191,11 @@ def get_segment_debug_handler(segment: Segment_definition) -> TextIO:
 
 _TYPEHOOKS = {
     datetime: datetime.fromisoformat,
-    timedelta: lambda i: timedelta(seconds=i),
+    timedelta: lambda i: timedelta(seconds=int(i)),
 }
 
 
-def _encode_durations(x):
+def _encode_durations(x: Union[datetime, timedelta]) -> Union[str, float]:
 
     if isinstance(x, datetime):
         return x.isoformat()
@@ -227,6 +248,7 @@ def load_activities(activities_filename: Optional[str] = None,) -> List[Activity
 def write_segments(
     segments: List[Segment], segments_filename: Optional[str] = None,
 ) -> None:
+
     if segments_filename is None:
         segments_filename = DEFAULT_SEGMENTS_FILENAME
     segments_file = Path(segments_filename)
@@ -298,3 +320,30 @@ def load_segment_definitions(
 
             for data in json.load(f_handler)
         ]
+
+
+def get_logger(
+    name: str, level: int = logging.WARNING, stderr: bool = True, logfile: bool = False
+) -> logging.Logger:
+    # Logger name and format
+    logger = logging.getLogger(name)
+    logger.setLevel(level=level)
+    fh_formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(filename)s:%(lineno)d(%(process)d) - %(message)s"
+    )
+
+    # Stderr logger
+
+    if stderr:
+        stderr_logger = logging.StreamHandler()
+        stderr_logger.setFormatter(fh_formatter)
+        logger.addHandler(stderr_logger)
+
+    # File logger
+
+    if logfile:
+        file_logger = logging.FileHandler(f"{name}.log")
+        file_logger.setFormatter(fh_formatter)
+        logger.addHandler(file_logger)
+
+    return logger

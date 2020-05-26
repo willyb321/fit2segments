@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+"""
+Parse a list of FIT files and generate the following output files:
+
+- `segments.json`: JSON file containing all segments and timings
+- `activities.json`: JSON file containing all activities
+- `segmentname_timings.csv`: CSV files containing date, kms, and duration (minutes)
+- `segmentname_debug.csv`: CSV file containing detected virtual start and stop points
+  (labeled by date), as well as segment reference (labeled w/segment name)
+"""
+
 
 import argparse
 import logging
@@ -19,6 +29,8 @@ from fitlib import (
     Segment_definition_point,
     Track,
     Track_point,
+    filename2activityname,
+    get_logger,
     get_segment_debug_handler,
     get_segment_tag,
     get_segment_timing_handler,
@@ -34,7 +46,9 @@ from fitlib import (
 
 def parse_args() -> argparse.Namespace:
     """ Call me with args = parse_args() """
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(description=__doc__)
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
 
     # Mandatory Flag
     # parser.add_argument(
@@ -60,33 +74,6 @@ def parse_args() -> argparse.Namespace:
         logger.setLevel(logging.INFO)
 
     return args
-
-
-def get_logger(
-    name: str, level: int = logging.WARNING, stderr: bool = True, logfile: bool = False
-) -> logging.Logger:
-    # Logger name and format
-    logger = logging.getLogger(name)
-    logger.setLevel(level=level)
-    fh_formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(filename)s:%(lineno)d(%(process)d) - %(message)s"
-    )
-
-    # Stderr logger
-
-    if stderr:
-        stderr_logger = logging.StreamHandler()
-        stderr_logger.setFormatter(fh_formatter)
-        logger.addHandler(stderr_logger)
-
-    # File logger
-
-    if logfile:
-        file_logger = logging.FileHandler(f"{name}.log")
-        file_logger.setFormatter(fh_formatter)
-        logger.addHandler(file_logger)
-
-    return logger
 
 
 def create_virtual_point(candidates: List[Matched_track_point]) -> Matched_track_point:
@@ -182,44 +169,32 @@ def distance(
     return to_return
 
 
+def find_candidates(
+    track: List[Track_point], segpoint: Segment_definition_point, threshold: int
+) -> List[Matched_track_point]:
+
+    return [
+        from_dict(
+            data_class=Matched_track_point,
+            data={"track_point": track_point, "dist_to_segment": dist},
+        )
+
+        for idx, track_point in enumerate(track)
+
+        if (dist := int(distance(track_point, segpoint))) < threshold
+    ]
+
+
 def match(
     track: Track,
     segment_definitions: List[Segment_definition],
     args: argparse.Namespace,
-) -> Tuple[Activity, List[Segment]]:
+) -> List[Segment]:
     # TODO Autodetect segment_definitions
     # TODO Import segment_definitions
     # TODO Compute exact distances with geopy
     threshold = 5000
 
-    def find_candidates(
-        track: List[Track_point], segpoint: Segment_definition_point, threshold: int
-    ) -> List[Matched_track_point]:
-        return [
-            from_dict(
-                data_class=Matched_track_point,
-                data={
-                    "track_point": track_point,
-                    "dist_to_segment": dist,
-                    "index_in_track": idx,
-                },
-            )
-
-            for idx, track_point in enumerate(track)
-
-            if (dist := int(distance(track_point, segpoint))) < threshold
-        ]
-
-    activity = from_dict(
-        data_class=Activity,
-        data={
-            "name": track.name,
-            "year": track.track_points[0].timestamp.year,
-            "start_time": track.track_points[0].timestamp,
-            "duration": track.track_points[-1].timestamp
-            - track.track_points[0].timestamp,
-        },
-    )
     segments_challenged = []
 
     for segment_definition in segment_definitions:
@@ -252,8 +227,14 @@ def match(
         segment_timing_handler: TextIO = get_segment_timing_handler(segment_definition)
 
         logger.debug("Looking for start points")
+
+        track_points_with_gps_fix = [
+            tp for tp in track.track_points if tp.position_long and tp.position_lat
+        ]
+
+        # Ignore points without GPS fix yet, if any
         start_candidates = find_candidates(
-            track.track_points, segment_definition.start, threshold
+            track_points_with_gps_fix, segment_definition.start, threshold,
         )
 
         if not start_candidates:
@@ -263,7 +244,7 @@ def match(
 
         logger.debug("Looking for stop points")
         stop_candidates = find_candidates(
-            track.track_points, segment_definition.stop, threshold
+            track_points_with_gps_fix, segment_definition.stop, threshold
         )
 
         if not stop_candidates:
@@ -310,6 +291,7 @@ def match(
                     data={
                         "activity_name": track.name,
                         "segment_name": segment_definition.name,
+                        "segment_uid": segment_definition.uid,
                         "duration": virtual_timing,
                         "start_time": virtual_start.track_point.timestamp,
                     },
@@ -336,38 +318,72 @@ def match(
         if segment_definition.debug:
             segment_debug_handler.close()
 
-    return (activity, segments_challenged)
+    return segments_challenged
 
 
-def main() -> None:
-    args = parse_args()
-    segment_definitions: List[Segment_definition] = load_segment_definitions()
+def update_storage(
+    segment_definitions: List[Segment_definition],
+    activities: List[Activity],
+    segments: List[Segment],
+    args: argparse.Namespace,
+) -> Tuple[List[Activity], List[Segment]]:
+
     logger.warning("%s segment definitions loaded", len(segment_definitions))
+    logger.warning("%s activities loaded", len(activities))
+    logger.warning("%s segments loaded", len(segments))
 
-    previous_activities: List[Activity] = load_activities()
-    logger.warning("%s previous activities loaded", len(previous_activities))
-
-    segments: List[Segment] = load_segments()
-    logger.warning("%s previous segments loaded", len(segments))
-
-    __import__("ipdb").set_trace()
+    # FIXME prune missing segment definitions, if flag?
 
     for filename in args.fitfiles:
-        # FIXME Recompute only what's needed !
+
+        # Skip already processed activities
+
+        if [a for a in activities if a.name == filename2activityname(filename)]:
+            logger.info("%s already processed, skipping", filename)
+
+            continue
         try:
             track = load_file(filename)
+            logger.warning("Loading %s", filename)
         except MissingValueError as e:
+            __import__("ipdb").set_trace()
             logger.critical("%s: %s", filename, str(e))
 
             continue
 
-        logger.warning("Loading %s", filename)
-        activity, segments_challenged = match(track, segment_definitions, args)
-        previous_activities.append(activity)
-        segments.extend(segments_challenged)
+        # the track has no track_point (HT, disabled GPS),
 
-    write_activities(previous_activities)
-    write_segments(segments)
+        if track.gps_available:
+            segments_challenged = match(track, segment_definitions, args)
+            segments.extend(segments_challenged)
+        else:
+            logger.info("%s is HT", filename)
+
+        activity = from_dict(
+            data_class=Activity,
+            data={
+                "name": track.name,
+                "year": track.track_points[0].timestamp.year,
+                "start_time": track.track_points[0].timestamp,
+                "duration": track.track_points[-1].timestamp
+                - track.track_points[0].timestamp,
+            },
+        )
+
+        activities.append(activity)
+
+    return (activities, segments)
+
+
+def main() -> None:
+    args = parse_args()
+
+    new_activities, new_segments = update_storage(
+        load_segment_definitions(), load_activities(), load_segments(), args
+    )
+
+    write_activities(new_activities)
+    write_segments(new_segments)
 
 
 if __name__ == "__main__":

@@ -4,19 +4,18 @@
 
 # Usage
 
-`usage: fit2segments.py [-h] [--verbose] fitfiles [fitfiles ...]`\_
+- compute segments with `fit2segments.py`: `usage: fit2segments.py [-h] [--verbose] fitfiles [fitfiles ...]`
+- view activity with `activity.py`
+- view segment with `segment.py`
 
 # Output
 
-- `segmentname_timings.csv`: CSV files containing date, kms, and duration (minutes)
-- `segmentname_debug.csv`: CSV file containing detected virtual start and stop points
-  (labeled by date), as well as segment reference (labeled w/segment name)
-
 # How it works
 
-- Load segments from `segments.json`
+- Load segments definitions from `segment_definitions.json`
 - For each FIT file, load track points
 - Match the segment, compute distance and duration
+- Update `activities.json` and `segments.json`
 
 # Note
 
