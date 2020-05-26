@@ -16,6 +16,7 @@ import operator
 import re
 from datetime import datetime, timedelta
 from math import sqrt
+from statistics import mean, stdev
 from typing import List, Optional, TextIO, Tuple
 
 from dacite import from_dict
@@ -24,6 +25,7 @@ from dacite.exceptions import MissingValueError
 from fitlib import (
     Activity,
     Matched_track_point,
+    Metric,
     Segment,
     Segment_definition,
     Segment_definition_point,
@@ -176,13 +178,50 @@ def find_candidates(
     return [
         from_dict(
             data_class=Matched_track_point,
-            data={"track_point": track_point, "dist_to_segment": dist},
+            data={"track_point": track_point, "dist_to_segment": dist, "idx": idx},
         )
 
         for idx, track_point in enumerate(track)
 
         if (dist := int(distance(track_point, segpoint))) < threshold
     ]
+
+
+def compute_metric(
+    field_name: str, segment_points: List[Track_point]
+) -> Optional[Metric]:
+
+    for sp in segment_points:
+        if not hasattr(sp, field_name) or getattr(sp, field_name) is None:
+            return None
+
+    ts = [mtp.timestamp for mtp in segment_points]
+    durations = [z[1] - z[0] for z in zip(ts, ts[1:])]
+    values = [
+        value
+
+        for duration, metric in zip(
+            durations, [getattr(mtp, field_name) for mtp in segment_points][1:]
+        )
+
+        for value in duration.seconds * [metric]
+    ]
+
+    if field_name == "enhanced_speed":
+        # cf. <https://github.com/pcolby/bipolar/issues/74>
+        values = [v * 3.6 for v in values]
+
+    to_return: Metric = from_dict(
+        data_class=Metric,
+        data={
+            "avg": mean(values),
+            "upper": max(values),
+            "lower": min(values),
+            "stdev": stdev(values),
+        },
+    )
+
+    return to_return
 
 
 def match(
@@ -284,7 +323,9 @@ def match(
             virtual_timing = (
                 virtual_stop.track_point.timestamp - virtual_start.track_point.timestamp
             )
-
+            segment_points = track_points_with_gps_fix[
+                virtual_start.idx : virtual_stop.idx + 2
+            ]
             segments_challenged.append(
                 from_dict(
                     data_class=Segment,
@@ -294,6 +335,10 @@ def match(
                         "segment_uid": segment_definition.uid,
                         "duration": virtual_timing,
                         "start_time": virtual_start.track_point.timestamp,
+                        "heart_rate": compute_metric("heart_rate", segment_points),
+                        "cadence": compute_metric("cadence", segment_points),
+                        "speed": compute_metric("enhanced_speed", segment_points),
+                        "temperature": compute_metric("temperature", segment_points),
                     },
                 )
             )
@@ -334,7 +379,9 @@ def update_storage(
 
     # FIXME prune missing segment definitions, if flag?
 
-    for filename in args.fitfiles:
+    dump_every = 50
+
+    for idx, filename in enumerate(args.fitfiles):
 
         # Skip already processed activities
 
@@ -371,6 +418,11 @@ def update_storage(
         )
 
         activities.append(activity)
+
+        if idx % dump_every == 0:
+            logger.debug("Dumping activites and segments, %s processed", idx)
+            write_activities(activities)
+            write_segments(segments)
 
     return (activities, segments)
 

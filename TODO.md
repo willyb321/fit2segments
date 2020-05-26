@@ -1,73 +1,44 @@
+## Urgent
+
+Update existing timings, don't recompute everything + use multiprocessing:
+
+- Each segment definition is internally identified by a hash taking into account the
+  name of the segment, and its start and stop coordinates and tolerance.
+- The list of processed segments should be kept for each activity, e.g. in a
+  "non-matching" list, so thatI know it's not worth recomputing them, and focus on those
+  that have not yet been computed.
+- FIT files should be ignored unless they are missing in `activities.json` and/or
+
 # Desired UI
 
+## Segments
+
+- Add CoteBlanche
+- add others from Strava (My segments)/ export ?
 - When new (y?)PR, show improvement.
 
 Command-line or single-page rendering (`vuejs`/`d3js`?):
 
-- automatic when connecting the Garmin device
+## Activity viewer
+
+- automatic when connecting the Garmin device **or** activity selector
 - show activity:
-  - name
-  - year
-  - start_time
-  - duration
   - average/min/max HR + splits
   - average/min/max cadence + splits
   - average/min/max speed + splits
   - effort score? HR x duration?
 - for each segments found, show:
-  - name
-  - time
-  - time delta with yPR and PR
-  - average/min/max HR + plsits
-  - average/min/max cadence + plsits
-  - average/min/max speed? + plsits
+  - HR, cadence, speed splits?
   - effort score? HR x duration?
-  - yearly and all-time ranking
 
-Interactions:
+## Segment viewer
+
+## Interactions
 
 - select segment to list attempts (name + date)
 - choose attempt to see corresponding activity
 
-# Storage
-
-SQLite would be ideal for a python backend. JSON would be better for an HTML backend. In
-between: 3 JSON files, linked by "keys", easily parsable for both:
-
-`segments.json`, input file, already exists.
-
-- Segment UUID == Segment tag
-
-`activities.json`, for each activity:
-
-- UUID == name == date ?
-- duration
-- distance
-- average HR, cadence, speed
-- effort score
-
-`activity_segments.json`, for each segment in each activity:
-
-- Activity UUID == name == date
-- Segment UUID == Segment tag
-- duration
-- distance
-- average HR, cadence, speed
-- effort score
-
 # Processing
-
-## Urgent
-
-Update existing timings, don't recompute everything:
-
-- Each segment definition is internally identified by a hash taking into account the
-  name of the segment, and its start and stop coordinates and tolerance.
-- FIT files should be ignored unless they are missing in `activities.json` and/or
-
-## Additional metrics
-
-- **Additional metrics**: Compute any relevant metric, e.g. heart rate, etc.
 
 ## Segments comparison and detection accuracy
 

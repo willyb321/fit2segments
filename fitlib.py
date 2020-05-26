@@ -25,26 +25,38 @@ DEGREES_TO_SEMICIRCLES: float = pow(2, 31) / 180
 
 @dataclass
 class Activity:
-    name: str
-    year: int
-    start_time: datetime
     duration: timedelta
+    name: str
+    start_time: datetime
+    year: int
+
+
+@dataclass
+class Metric:
+    avg: float
+    upper: float
+    lower: float
+    stdev: float
 
 
 @dataclass
 class Segment:
     activity_name: str
+    cadence: Optional[Metric]
+    duration: timedelta
+    heart_rate: Optional[Metric]
     segment_name: str
     segment_uid: str
+    speed: Optional[Metric]
     start_time: datetime
-    duration: timedelta
+    temperature: Optional[Metric]
 
 
 @dataclass
 class Segment_definition_point:
+    altitude: float
     latitude: float
     longitude: float
-    altitude: float
     tolerance: float
 
 
@@ -81,9 +93,10 @@ class Track_point:
 
 @dataclass
 class Matched_track_point:
-    track_point: Track_point
-    dist_to_segment: float
     category: Optional[str]
+    dist_to_segment: float
+    idx: int
+    track_point: Track_point
 
 
 @dataclass

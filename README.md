@@ -6,7 +6,6 @@
 
 - compute segments with `fit2segments.py`: `usage: fit2segments.py [-h] [--verbose] fitfiles [fitfiles ...]`
 - view activity with `activity.py`
-- view segment with `segment.py`
 
 # Output
 

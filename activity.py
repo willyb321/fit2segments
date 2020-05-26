@@ -6,7 +6,7 @@ import argparse
 import logging
 from typing import List
 
-from fitlib import Activity, Segment, get_logger, load_activities, load_segments
+from fitlib import Activity, Metric, Segment, get_logger, load_activities, load_segments
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,35 +48,70 @@ def render_activity_summary(activity: Activity) -> None:
     print("*" * 80)
     print(f"Date: {activity.start_time}")
     print(f"Duration: {str(activity.duration)}")
-    print("*" * 80)
+    print("*" * 80 + "\n")
 
 
 def render_segment_in_context(segment: Segment, segments: List[Segment]) -> None:
     """Show segment details in context"""
-    # Show segment
-    print(f"Name     : {segment.segment_name}")
-    print(f"Duration : {str(segment.duration)}")
 
-    # Show segment context
+    # Show segment
+    print(f"Segment    : {segment.segment_name}\n")
+    print(f"  Duration : {str(segment.duration)}")
+
+    for label, (metric_name, unit) in {
+        "  HR": ["heart_rate", "bpm"],
+        "  Cadence": ["cadence", "Hz"],
+        "  Speed": ["speed", "km/h"],
+        "  Temp.": ["temperature", "°C"],
+    }.items():
+        metric: Metric = getattr(segment, metric_name)
+
+        if metric is None:
+            continue
+        average = metric.avg
+        lower = metric.lower
+        upper = metric.upper
+        stdev = metric.stdev
+        print(
+            f"{label:<11}: {average:>5.1f} {unit:<4} ± {stdev:2.1f} "
+            f"∈ [{lower:2.0f}:{upper:2.0f}]"
+        )
+
+    # Compute context
     all_time = sorted(
         [s for s in segments if s.segment_uid == segment.segment_uid],
         key=lambda s: s.duration,
     )
-
-    all_time_rank = all_time.index(segment) + 1
-    all_time_delta_pr = segment.duration - all_time[0].duration
-    print(
-        f"  Rank : {all_time_rank: 4d}    "
-        f"𝚫 PR : {str(all_time_delta_pr)} ({str(all_time[0].duration)})"
-    )
-
     this_year = [s for s in all_time if s.start_time.year == segment.start_time.year]
-    this_year_rank = this_year.index(segment) + 1
-    this_year_delta_pr = segment.duration - this_year[0].duration
-    print(
-        f"  yRank: {this_year_rank: 4d}    "
-        f"𝚫 yPR: {str(this_year_delta_pr)} ({str(this_year[0].duration)})"
-    )
+
+    # Render context
+    render = {
+        "All-time ": all_time,
+        "This year": this_year,
+    }
+
+    print()
+
+    for label, data in render.items():
+
+        rank = data.index(segment) + 1
+
+        attempts = len(data)
+
+        # TODO if PR, print delta w/previous PR
+        # if rank == 1 and len(data) > 1:
+        #     ref = data[1].duration
+        #     day = data[1].start_time.date()
+        #     delta_pr = segment.duration - ref
+        # else:
+        ref = data[0].duration
+        day = data[0].start_time.date()
+        delta_pr = segment.duration - ref
+
+        print(
+            f"  {label}: {rank: 3d}/{attempts:>3d}    "
+            f"𝚫 PR : {str(delta_pr)} ({str(ref)}, {str(day)})"
+        )
 
 
 def render_activity(
