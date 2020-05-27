@@ -17,7 +17,7 @@ import re
 from datetime import datetime, timedelta
 from math import sqrt
 from statistics import mean, stdev
-from typing import List, Optional, TextIO, Tuple
+from typing import List, Optional, TextIO, Tuple, Union
 
 from dacite import from_dict
 from dacite.exceptions import MissingValueError
@@ -164,6 +164,8 @@ def get_csv_filename(track_name: str, segment_name: str) -> str:
 def distance(
     track_point: Track_point, segment_point: Segment_definition_point
 ) -> float:
+    assert track_point.position_lat
+    assert track_point.position_long
     d2_lat = (track_point.position_lat - segment_point.latitude) ** 2
     d2_long = (track_point.position_long - segment_point.longitude) ** 2
     to_return = sqrt(d2_lat + d2_long)
@@ -239,10 +241,14 @@ def match(
     for segment_definition in segment_definitions:
         logger.debug("Searching for segment_definition %s", segment_definition.name)
 
+        track_points_with_gps_fix = [
+            tp for tp in track.track_points if tp.position_long and tp.position_lat
+        ]
+
         if args.verbose:
             deltas = []
 
-            for idx, track_point in enumerate(track.track_points):
+            for idx, track_point in enumerate(track_points_with_gps_fix):
                 to_add = (
                     idx,
                     track_point.timestamp,
@@ -267,10 +273,6 @@ def match(
 
         logger.debug("Looking for start points")
 
-        track_points_with_gps_fix = [
-            tp for tp in track.track_points if tp.position_long and tp.position_lat
-        ]
-
         # Ignore points without GPS fix yet, if any
         start_candidates = find_candidates(
             track_points_with_gps_fix, segment_definition.start, threshold,
@@ -292,26 +294,34 @@ def match(
             continue
 
         challenges = get_challenges(start_candidates, stop_candidates)
-        # TODO compute any relevant metric
         logger.debug("Found %s attempt(s) for this segment", len(challenges))
 
         for virtual_start, virtual_stop in challenges:
+
+            # Make sure all coordinates, distances, etc. are correct
+            assert virtual_start.track_point.position_long
+            assert virtual_start.track_point.position_lat
+            assert virtual_start.track_point.distance
+            assert virtual_stop.track_point.position_long
+            assert virtual_stop.track_point.position_lat
+            assert virtual_stop.track_point.distance
+
             if segment_definition.debug:
                 segment_debug_handler.write(
                     "%s,%s,%s\n%s,%s,%s\n"
                     % (
                         semicircles_to_degrees(
-                            int(virtual_start.track_point.position_long)
+                            round(virtual_start.track_point.position_long)
                         ),
                         semicircles_to_degrees(
-                            int(virtual_start.track_point.position_lat)
+                            round(virtual_start.track_point.position_lat)
                         ),
                         track.name,
                         semicircles_to_degrees(
-                            int(virtual_stop.track_point.position_long)
+                            round(virtual_stop.track_point.position_long)
                         ),
                         semicircles_to_degrees(
-                            int(virtual_stop.track_point.position_lat)
+                            round(virtual_stop.track_point.position_lat)
                         ),
                         track.name,
                     )
@@ -377,18 +387,73 @@ def update_storage(
     logger.warning("%s activities loaded", len(activities))
     logger.warning("%s segments loaded", len(segments))
 
-    # FIXME prune missing segment definitions, if flag?
+    # FIXME prune unknown segment definitions, if any - perhaps add a CLI flag?
 
-    dump_every = 50
+    dump_every: int = 50
 
     for idx, filename in enumerate(args.fitfiles):
 
-        # Skip already processed activities
+        # First, we need to check whether the activity has already already been
+        # processed, and if it's the case, if new segment definitions have been added
+        # since this previous processing.
 
-        if [a for a in activities if a.name == filename2activityname(filename)]:
-            logger.info("%s already processed, skipping", filename)
+        matching_activities = [
+            a for a in activities if a.name == filename2activityname(filename)
+        ]
+        assert len(matching_activities) == 0 or len(matching_activities) == 1
+        matching_activity: Union[Activity, None] = None
 
-            continue
+        # `segments_definitions_to_search` will contain only the segment definitions
+        # that have to be searched for this activity, ie. all of them is the activity is
+        # new, or only new/updates ones if it has been processed previously
+
+        segments_definitions_to_search: Union[List[Segment_definition], None] = None
+
+        # If it's a known activity, first check whether the GPS was enabled: if it's not
+        # the case, there's no need to search for segment definitions. If the GPS was
+        # enabled, then we can safely ignore segment definitions the `uid` of which,
+        # which is a hash, were already matched.
+
+        if matching_activities:
+            matching_activity = matching_activities[0]
+
+            # Don't search for segment definitions if no GPS is available
+
+            if not matching_activity.gps_available:
+                logger.debug("%s has no GPS records", filename)
+
+                continue
+
+            # get the list of segment definitions the hash of which is not found in this
+            # known activity
+
+            segments_definitions_to_search = [
+                seg
+
+                for seg in segment_definitions
+
+                if seg.uid not in matching_activity.matched_against_segments
+            ]
+
+            # Don't search for segment definitions if there's no new ones
+
+            if not segments_definitions_to_search:
+                logger.debug(
+                    "%s already searched for %s segments",
+                    filename,
+                    len(segment_definitions),
+                )
+
+                continue
+
+        else:
+            # If the activity is new, search for all segments
+            segments_definitions_to_search = segment_definitions
+
+        # Here, either the activity is new, or it's known and only a few segments have
+        # to be searched for. We need to load the file, hoping the hit the cache since
+        # parsing FIT files takes time.
+
         try:
             track = load_file(filename)
             logger.warning("Loading %s", filename)
@@ -398,14 +463,17 @@ def update_storage(
 
             continue
 
-        # the track has no track_point (HT, disabled GPS),
+        # If the track has track_point coordinates, we can search for segments. If it
+        # has none (hometrainer or manually added activity), then we don't need to and
+        # can just add the activity as is.
 
         if track.gps_available:
-            segments_challenged = match(track, segment_definitions, args)
+            segments_challenged = match(track, segments_definitions_to_search, args)
             segments.extend(segments_challenged)
         else:
             logger.info("%s is HT", filename)
 
+        # Build the activity dataclass
         activity = from_dict(
             data_class=Activity,
             data={
@@ -414,12 +482,24 @@ def update_storage(
                 "start_time": track.track_points[0].timestamp,
                 "duration": track.track_points[-1].timestamp
                 - track.track_points[0].timestamp,
+                "matched_against_segments": [s.uid for s in segment_definitions],
+                "gps_available": track.gps_available,
             },
         )
 
+        # If the activity was previously known, but new segments had to be matched, the
+        # previous copy must be removed to avoid duplicates
+
+        if matching_activity:
+            activities.remove(matching_activity)
+
+        # Add the new (or updated) activity
         activities.append(activity)
 
-        if idx % dump_every == 0:
+        # Dump from time to time, just in case it crashes, to avoid recomputing
+        # everything
+
+        if idx % dump_every == 0 and idx != 0:
             logger.debug("Dumping activites and segments, %s processed", idx)
             write_activities(activities)
             write_segments(segments)

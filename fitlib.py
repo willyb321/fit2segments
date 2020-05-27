@@ -29,6 +29,8 @@ class Activity:
     name: str
     start_time: datetime
     year: int
+    matched_against_segments: List[str]
+    gps_available: bool
 
 
 @dataclass
@@ -129,7 +131,8 @@ def load_file(fitfilename: str, cache_path_name: Optional[str] = None) -> Track:
     cache_path = Path(cache_path_name)
 
     if not cache_path.is_dir():
-        # FIXME  https://docs.python-guide.org/writing/logging/
+        # FIXME Add logging support here
+        # https://docs.python-guide.org/writing/logging/
         # logger.error("tralala")
         pass
 
@@ -224,7 +227,6 @@ def load_segments(segments_filename: Optional[str] = None,) -> List[Segment]:
 
     if segments_file.exists():
         with segments_file.open() as f_handler:
-            # FIXME test hooks
             to_return = [
                 from_dict(
                     data_class=Segment, data=data, config=Config(type_hooks=_TYPEHOOKS),
@@ -244,7 +246,6 @@ def load_activities(activities_filename: Optional[str] = None,) -> List[Activity
 
     if activities_file.exists():
         with activities_file.open() as f_handler:
-            # FIXME test hooks
             to_return = [
                 from_dict(
                     data_class=Activity,
@@ -266,10 +267,6 @@ def write_segments(
         segments_filename = DEFAULT_SEGMENTS_FILENAME
     segments_file = Path(segments_filename)
     with segments_file.open("w") as f_handler:
-        # TODO should encode:
-        # - timedelta as total_seconds
-        # - datetimes as isoformat or timestamp
-        # pb: default= can handle a single function, which should check which one to use
         json.dump(
             [asdict(s) for s in segments],
             f_handler,
@@ -285,10 +282,6 @@ def write_activities(
         activities_filename = DEFAULT_ACTIVITIES_FILENAME
     activitys_file = Path(activities_filename)
     with activitys_file.open("w") as f_handler:
-        # TODO should encode:
-        # - timedelta as total_seconds
-        # - datetimes as isoformat or timestamp
-        # pb: default= can handle a single function, which should check which one to use
         json.dump(
             [asdict(a) for a in activities],
             f_handler,
