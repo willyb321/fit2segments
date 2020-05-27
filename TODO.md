@@ -1,15 +1,9 @@
-## Urgent
-
-Update existing timings, don't recompute everything + use multiprocessing:
-
-- Each segment definition is internally identified by a hash taking into account the
-  name of the segment, and its start and stop coordinates and tolerance.
-- The list of processed segments should be kept for each activity, e.g. in a
-  "non-matching" list, so thatI know it's not worth recomputing them, and focus on those
-  that have not yet been computed.
-- FIT files should be ignored unless they are missing in `activities.json` and/or
-
 # Desired UI
+
+- add interactive mode, with [1-9] to show details about segments and activities
+- add a flag to force recompute segments (Tamée 2020-05-27 found only twice ?)
+- retrieve titles from strava or garmin
+- retrieve segments from strava
 
 ## Segments
 
