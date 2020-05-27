@@ -48,13 +48,14 @@ def render_activity_summary(activity: Activity) -> None:
     print("*" * 80)
     print(f"Date: {activity.start_time}")
     print(f"Duration: {str(activity.duration)}")
-    print("*" * 80 + "\n")
+    print("*" * 80)
 
 
 def render_segment_in_context(segment: Segment, segments: List[Segment]) -> None:
     """Show segment details in context"""
 
     # Show segment
+    print()
     print(f"Segment    : {segment.segment_name}\n")
     print(f"  Duration : {str(segment.duration)}")
 
