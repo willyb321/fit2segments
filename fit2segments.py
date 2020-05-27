@@ -387,7 +387,14 @@ def update_storage(
     logger.warning("%s activities loaded", len(activities))
     logger.warning("%s segments loaded", len(segments))
 
-    # FIXME prune unknown segment definitions, if any - perhaps add a CLI flag?
+    # Remove undefined segments
+    segments = [
+        seg
+
+        for seg in segments
+
+        if seg.segment_uid in [sd.uid for sd in segment_definitions]
+    ]
 
     dump_every: int = 50
 
