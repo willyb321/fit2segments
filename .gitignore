@@ -1,6 +1,5 @@
 *.csv
 *.fit
 *.json
-.cache/*
 activities
 csv/*

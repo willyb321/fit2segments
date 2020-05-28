@@ -116,7 +116,7 @@ def render_segment_in_context(segment: Segment, segments: List[Segment]) -> None
 
 
 def render_activity(
-    activity: Activity, activities: List[Activity], segments: List[Segment]
+    activity: str, activities: List[Activity], segments: List[Segment]
 ) -> None:
     """docstring for render_activity"""
     matching_activities = [a for a in activities if a.name == activity]

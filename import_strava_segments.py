@@ -13,9 +13,11 @@ import requests
 import requests_cache
 from bs4 import BeautifulSoup
 
-from fitlib import Segment_definition, Segment_definition_point
+from fitlib import Segment_definition, Segment_definition_point, get_logger
 
-requests_cache.install_cache(".cache/requests_cache")
+requests_cache.install_cache(
+    str(Path.home() / ".cache" / "fit2segments" / "requests_cache")
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,33 +40,6 @@ def parse_args() -> argparse.Namespace:
         logging.basicConfig(level=logging.INFO)
 
     return args
-
-
-def get_logger(
-    name: str, level: int = logging.WARNING, stderr: bool = True, logfile: bool = False
-) -> logging.Logger:
-    # Logger name and format
-    logger = logging.getLogger(name)
-    logger.setLevel(level=level)
-    fh_formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(filename)s:%(lineno)d(%(process)d) - %(message)s"
-    )
-
-    # Stderr logger
-
-    if stderr:
-        stderr_logger = logging.StreamHandler()
-        stderr_logger.setFormatter(fh_formatter)
-        logger.addHandler(stderr_logger)
-
-    # File logger
-
-    if logfile:
-        file_logger = logging.FileHandler(f"{name}.log")
-        file_logger.setFormatter(fh_formatter)
-        logger.addHandler(file_logger)
-
-    return logger
 
 
 def get_segment_start_stops(

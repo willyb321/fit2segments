@@ -12,7 +12,7 @@ from typing import List, Optional, TextIO, Union
 from dacite import Config, from_dict
 from fitparse import FitFile
 
-DEFAULT_CACHE_PATH = "./.cache"
+DEFAULT_CACHE_PATH = str(Path.home() / ".cache" / "fit2segments")
 DEFAULT_SEGMENT_DEFINITIONS_FILENAME = "segment_definitions.json"
 DEFAULT_SEGMENTS_FILENAME = "segments.json"
 DEFAULT_ACTIVITIES_FILENAME = "activities.json"
