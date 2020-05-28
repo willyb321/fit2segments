@@ -130,7 +130,9 @@ def render_activity(
 
     render_activity_summary(matching_activity)
 
-    matching_segments = [s for s in segments if s.activity_name == activity]
+    matching_segments = sorted(
+        [s for s in segments if s.activity_name == activity], key=lambda x: x.start_time
+    )
 
     for matching_segment in matching_segments:
         render_segment_in_context(matching_segment, segments)
