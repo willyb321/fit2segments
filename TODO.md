@@ -1,38 +1,51 @@
 # Desired UI
 
-- add interactive mode, with [1-9] to show details about segments and activities
-- add a flag to force recompute segments (Tamée 2020-05-27 found only twice ?)
-- retrieve titles from strava or garmin
-- retrieve segments from strava
+- Add interactive mode, with [1-9] to show details about segments and activities
 
-## Segments
-
-- Add CoteBlanche
-- add others from Strava (My segments)/ export ?
-- When new (y?)PR, show improvement.
-
-Command-line or single-page rendering (`vuejs`/`d3js`?):
-
-## Activity viewer
+  - initial view: activities
+  - select segment to list attempts (name + date)
+  - choose attempt to see corresponding activity
 
 - automatic when connecting the Garmin device **or** activity selector
-- show activity:
-  - average/min/max HR + splits
-  - average/min/max cadence + splits
-  - average/min/max speed + splits
-  - effort score? HR x duration?
-- for each segments found, show:
-  - HR, cadence, speed splits?
-  - effort score? HR x duration?
+- Single-page rendering (`vuejs`/`d3js`?):
 
-## Segment viewer
+# Activity view
 
-## Interactions
+Add:
 
-- select segment to list attempts (name + date)
-- choose attempt to see corresponding activity
+- distance
+- D+
+- elapsed time
+- moving time
+- title
+- comments
 
-# Processing
+- average/min/max HR + splits
+- average/min/max cadence + splits
+- average/min/max speed + splits
+- effort score? HR x duration?
+
+# Segment view
+
+Add:
+
+- HR, cadence, speed splits?
+- effort score? HR x duration?
+- When new (y?)PR, show improvement.
+
+# Segment definition
+
+## Strava import
+
+Available but not used yet, as they are not part of segment definitions (would be to
+cumbersome to do that manually):
+
+- distance
+- grade
+- d+
+- cat
+- KOM
+- wKom
 
 ## Segments comparison and detection accuracy
 

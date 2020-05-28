@@ -1,2 +1,4 @@
 dacite
 fitparse
+requests
+requests-cache
