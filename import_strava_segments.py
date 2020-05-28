@@ -110,7 +110,7 @@ def get_segment_public_metadata(seg_id: int) -> Dict[str, Any]:
     lowest: int = int(stats[2][:-1].replace(",", ""))
     highest: int = int(stats[3][:-1].replace(",", ""))
     elevation_difference: int = int(stats[4][:-1].replace(",", ""))
-    climb_category: int = int(stats[5])
+    climb_category: int = int(stats[5] if stats[5] != "" else 0)
 
     to_return = {
         "name": f"{name} ({seg_id})",
