@@ -4,7 +4,7 @@
 
 import argparse
 import logging
-from typing import List
+from typing import List, Optional
 
 from fitlib import Activity, Metric, Segment, get_logger, load_activities, load_segments
 
@@ -27,7 +27,10 @@ def parse_args() -> argparse.Namespace:
 
     # Positional arguments
     parser.add_argument(
-        "activity_names", nargs="+", help="Activity name, e.g 2020-05-24-10-42-18"
+        "activity_names",
+        nargs="*",
+        default=[None],
+        help="Activity name, e.g 2020-05-24-10-42-18",
     )
 
     # Boolean
@@ -116,10 +119,17 @@ def render_segment_in_context(segment: Segment, segments: List[Segment]) -> None
 
 
 def render_activity(
-    activity: str, activities: List[Activity], segments: List[Segment]
+    activity: Optional[str], activities: List[Activity], segments: List[Segment]
 ) -> None:
     """docstring for render_activity"""
-    matching_activities = [a for a in activities if a.name == activity]
+
+    if activity:
+        matching_activities = [a for a in activities if a.name == activity]
+    else:
+        matching_activities = [
+            sorted(activities, key=lambda x: x.start_time, reverse=True)[0]
+        ]
+
     assert matching_activities, "Activity %s not found!" % activity
     assert len(matching_activities) == 1, "Activity %s found %s times !" % (
         activity,
