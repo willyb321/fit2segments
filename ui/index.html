@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Fit2segments</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div id="app" class="grid-container">
+      <div class="header">Header</div>
+      <div class="activities">
+        <activity-item
+          v-for="activity in activities"
+          v-bind:main_content="content"
+          v-bind:activity="activity"
+          v-bind:key="activity.name"
+        >
+        </activity-item>
+      </div>
+      <div class="segmentDefinitions">
+        <segment-definition-item
+          v-for="segmentDefinition in segmentDefinitions"
+          v-bind:segment-definition="segmentDefinition"
+          v-bind:key="segmentDefinition.name"
+        >
+        </segment-definition-item>
+      </div>
+      <div class="content">
+        <div v-if="data_to_render_type === 'activity'">
+          Activity:
+          <ul>
+            <li>{{ data_to_render.start_time_str }}</li>
+            <li>{{ data_to_render.duration_str }}</li>
+            <!-- <li>{{ data_to_render.matched_against_segments }}</li> -->
+          </ul>
+          <ol>
+            <li v-for="segment in context" :key="segment.segment_uid">
+              {{ segment.segment_name }}: {{ segment.duration_str }}
+            </li>
+          </ol>
+        </div>
+        <div v-else-if="data_to_render_type === 'segmentDefinition'">
+          Segment_definition:
+          <ul>
+            <li>{{ data_to_render.name }}</li>
+            <!-- <li>{{ data_to_render.uid }}</li> -->
+          </ul>
+          <ol>
+            <li v-for="segment in context">
+              {{ segment.start_time_str }}: {{ segment.duration_str }}
+            </li>
+          </ol>
+        </div>
+        <div v-else>
+          Unknown
+        </div>
+      </div>
+      <div class="footer">Footer</div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="index.js"></script>
+  </body>
+</html>

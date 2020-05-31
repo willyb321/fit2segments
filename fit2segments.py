@@ -42,6 +42,7 @@ from fitlib import (
     load_segments,
     semicircles_to_degrees,
     write_activities,
+    write_data_js,
     write_segments,
 )
 
@@ -517,12 +518,14 @@ def update_storage(
 def main() -> None:
     args = parse_args()
 
+    segment_definitions = load_segment_definitions()
     new_activities, new_segments = update_storage(
-        load_segment_definitions(), load_activities(), load_segments(), args
+        segment_definitions, load_activities(), load_segments(), args
     )
 
     write_activities(new_activities)
     write_segments(new_segments)
+    write_data_js(segment_definitions, new_activities, new_segments)
 
 
 if __name__ == "__main__":

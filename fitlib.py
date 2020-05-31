@@ -290,6 +290,27 @@ def write_activities(
         )
 
 
+def write_data_js(
+    segment_definitions: List[Segment_definition],
+    activities: List[Activity],
+    segments: List[Segment],
+) -> None:
+
+    data = {
+        "segment_definitions": [asdict(sg) for sg in segment_definitions],
+        "activities": [asdict(a) for a in activities],
+        "segments": [asdict(s) for s in segments],
+    }
+
+    with open("ui/data.js", "w") as output_handler:
+        for source_name, content in data.items():
+            output_handler.write(f"{source_name} = ")
+
+            for line in json.dumps(content, indent=True, default=_encode_durations):
+                output_handler.write(line)
+            output_handler.write(";\n")
+
+
 def load_segment_definitions(
     segment_definitions_filename: Optional[str] = None,
 ) -> List[Segment_definition]:

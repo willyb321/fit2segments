@@ -1,0 +1,38 @@
+/* https://www.w3schools.com/css/css_grid.asp */
+
+.header {
+  grid-area: header;
+}
+.activities {
+  grid-area: activities;
+  overflow-y: auto;
+}
+.segment_definitions {
+  grid-area: segment_definitions;
+  overflow-y: auto;
+}
+.content {
+  grid-area: content;
+  overflow-y: auto;
+}
+.footer {
+  grid-area: footer;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-areas:
+    "header header header header header header"
+    "activities segment_definitions content content content content"
+    "footer footer footer footer footer footer";
+  grid-gap: 10px;
+  grid-template-columns: 12em 21em auto;
+  grid-template-rows: 10vh 80vh 10vh;
+  background-color: #f39621;
+  padding: 10px;
+}
+
+.grid-container > div {
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 20px 0;
+}
