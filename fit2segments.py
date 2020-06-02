@@ -485,13 +485,14 @@ def update_storage(
         activity = from_dict(
             data_class=Activity,
             data={
-                "name": track.name,
-                "year": track.track_points[0].timestamp.year,
-                "start_time": track.track_points[0].timestamp,
+                "distance": track.track_points[-1].distance,
                 "duration": track.track_points[-1].timestamp
                 - track.track_points[0].timestamp,
-                "matched_against_segments": [s.uid for s in segment_definitions],
                 "gps_available": track.gps_available,
+                "matched_against_segments": [s.uid for s in segment_definitions],
+                "name": track.name,
+                "start_time": track.track_points[0].timestamp,
+                "year": track.track_points[0].timestamp.year,
             },
         )
 

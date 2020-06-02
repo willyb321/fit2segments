@@ -2,13 +2,6 @@
 
 - Add interactive mode, with [1-9] to show details about segments and activities
 
-  - initial view: activities
-  - select segment to list attempts (name + date)
-  - choose attempt to see corresponding activity
-
-- automatic when connecting the Garmin device **or** activity selector
-- Single-page rendering (`vuejs`/`d3js`?):
-
 # Activity view
 
 Add:

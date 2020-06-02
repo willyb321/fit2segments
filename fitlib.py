@@ -25,12 +25,13 @@ DEGREES_TO_SEMICIRCLES: float = pow(2, 31) / 180
 
 @dataclass
 class Activity:
+    distance: Optional[float]
     duration: timedelta
+    gps_available: bool
+    matched_against_segments: List[str]
     name: str
     start_time: datetime
     year: int
-    matched_against_segments: List[str]
-    gps_available: bool
 
 
 @dataclass
@@ -66,6 +67,7 @@ class Segment_definition_point:
 class Segment_definition:
     debug: bool
     name: str
+    strava_id: Optional[int]
     start: Segment_definition_point
     stop: Segment_definition_point
     uid: str = field(init=False)

@@ -88,7 +88,8 @@ def get_segment_public_metadata(seg_id: int) -> Dict[str, Any]:
     climb_category: int = int(stats[5] if stats[5] != "" else 0)
 
     to_return = {
-        "name": f"{name} ({seg_id})",
+        "name": f"{name}",
+        "strava_id": seg_id,
         "distance": distance,
         "avg_grade": avg_grade,
         "lowest": lowest,
@@ -119,7 +120,11 @@ def import_from_strava(filename: str) -> List[Segment_definition]:
         start, stop = get_segment_start_stops(seg_id)
         metadata = get_segment_public_metadata(seg_id)
         new_segment_definition: Segment_definition = Segment_definition(
-            debug=False, name=metadata["name"], start=start, stop=stop,
+            debug=False,
+            name=metadata["name"],
+            start=start,
+            stop=stop,
+            strava_id=metadata["strava_id"],
         )
         to_return.append(new_segment_definition)
 
