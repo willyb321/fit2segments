@@ -1,9 +1,16 @@
 /* https://www.w3schools.com/css/css_grid.asp */
 
+html,
+body {
+  font-family: Verdana, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 .header {
   grid-area: header;
 }
-.activities {
+#activities {
   grid-area: activities;
   overflow-y: auto;
 }
@@ -26,7 +33,7 @@
     "activities segment_definitions content content content content"
     "footer footer footer footer footer footer";
   grid-gap: 10px;
-  grid-template-columns: 12em 21em auto;
+  grid-template-columns: 11em 21em auto;
   grid-template-rows: 10vh 80vh 10vh;
   background-color: #f39621;
   padding: 10px;

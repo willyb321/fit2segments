@@ -9,22 +9,26 @@
   <body>
     <div id="app" class="grid-container">
       <div class="header">Header</div>
-      <div class="activities">
-        <activity-item
-          v-for="activity in activities"
-          v-bind:main_content="content"
-          v-bind:activity="activity"
-          v-bind:key="activity.name"
-        >
-        </activity-item>
+      <div id="activities">
+        <ul>
+          <activity-item
+            v-for="activity in activities"
+            :main_content="content"
+            :activity="activity"
+            :key="activity.name"
+          >
+          </activity-item>
+        </ul>
       </div>
-      <div class="segmentDefinitions">
-        <segment-definition-item
-          v-for="segmentDefinition in segmentDefinitions"
-          v-bind:segment-definition="segmentDefinition"
-          v-bind:key="segmentDefinition.name"
-        >
-        </segment-definition-item>
+      <div id="segmentDefinitions">
+        <ul>
+          <segment-definition-item
+            v-for="segmentDefinition in segmentDefinitions"
+            :segment-definition="segmentDefinition"
+            :key="segmentDefinition.name"
+          >
+          </segment-definition-item>
+        </ul>
       </div>
       <div class="content">
         <div v-if="data_to_render_type === 'activity'">
@@ -32,12 +36,16 @@
           <ul>
             <li>{{ data_to_render.start_time_str }}</li>
             <li>{{ data_to_render.duration_str }}</li>
+            <li>{{ data_to_render.distance /1000 }} kms</li>
             <!-- <li>{{ data_to_render.matched_against_segments }}</li> -->
           </ul>
           <ol>
-            <li v-for="segment in context" :key="segment.segment_uid">
-              {{ segment.segment_name }}: {{ segment.duration_str }}
-            </li>
+            <segment-in-activity-context-item
+              v-for="segment in context"
+              :segment="segment"
+              :key="segment.segment_uid"
+            >
+            </segment-in-activity-context-item>
           </ol>
         </div>
         <div v-else-if="data_to_render_type === 'segmentDefinition'">
@@ -47,9 +55,12 @@
             <!-- <li>{{ data_to_render.uid }}</li> -->
           </ul>
           <ol>
-            <li v-for="segment in context">
-              {{ segment.start_time_str }}: {{ segment.duration_str }}
-            </li>
+            <segment-in-definition-context-item
+              v-for="segment in context"
+              :segment="segment"
+              :key="segment.start_time_str"
+            >
+            </segment-in-definition-context-item>
           </ol>
         </div>
         <div v-else>
