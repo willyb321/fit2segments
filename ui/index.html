@@ -32,12 +32,10 @@
       </div>
       <div class="content">
         <div v-if="data_to_render_type === 'activity'">
-          Activity:
+          <h5>{{ data_to_render.start_time_str }}</h5>
           <ul>
-            <li>{{ data_to_render.start_time_str }}</li>
             <li>{{ data_to_render.duration_str }}</li>
-            <li>{{ data_to_render.distance /1000 }} kms</li>
-            <!-- <li>{{ data_to_render.matched_against_segments }}</li> -->
+            <li>{{ (data_to_render.distance /1000).toFixed(2) }} kms</li>
           </ul>
           <ol>
             <segment-in-activity-context-item
@@ -49,19 +47,26 @@
           </ol>
         </div>
         <div v-else-if="data_to_render_type === 'segmentDefinition'">
-          Segment_definition:
-          <ul>
-            <li>{{ data_to_render.name }}</li>
-            <!-- <li>{{ data_to_render.uid }}</li> -->
-          </ul>
-          <ol>
-            <segment-in-definition-context-item
-              v-for="segment in context"
-              :segment="segment"
-              :key="segment.start_time_str"
-            >
-            </segment-in-definition-context-item>
-          </ol>
+          <h5>{{ data_to_render.name }}:</h5>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Duration</th>
+                <th>HR</th>
+                <th>Cadence</th>
+                <th>Temp.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                is="segment-in-definition-context-item"
+                v-for="segment in context"
+                :segment="segment"
+                :key="segment.start_time_str"
+              ></tr>
+            </tbody>
+          </table>
         </div>
         <div v-else>
           Unknown

@@ -1,7 +1,8 @@
 // Corresponding items
 Vue.component("activityItem", {
   props: ["activity"],
-  template: '<li @click="renderActivity(activity)">{{ activity.name }}</li>',
+  template:
+    '<li><a @click="renderActivity(activity)">{{ activity.name }}</a></li>',
   methods: {
     renderActivity(activity) {
       this.$root.data_to_render_type = "activity";
@@ -13,7 +14,7 @@ Vue.component("activityItem", {
 Vue.component("segmentDefinitionItem", {
   props: ["segmentDefinition"],
   template:
-    '<li @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</li>',
+    '<li><a @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
   methods: {
     renderSegmentDefinition(segmentDefinition) {
       this.$root.data_to_render_type = "segmentDefinition";
@@ -34,40 +35,30 @@ Vue.component("segmentInActivityContextItem", {
     <table>
     <tr>
       <td>Duration</td>
-      <td>:</td>
       <td>{{ segment.duration_str }}</td>
     </tr>
     <tr>
-      <td></td>
-    </tr>
-    <tr>
       <td>HR</td>
-      <td>:</td>
       <td>{{ segment.heart_rate_str }}</td>
     </tr>
     <tr>
       <td>Cadence</td>
-      <td>:</td>
       <td>{{ segment.cadence_str }}</td>
     </tr>
     <tr>
       <td>Speed</td>
-      <td>:</td>
       <td>{{ segment.speed_str }}</td>
     </tr>
     <tr>
       <td>Temp.</td>
-      <td>:</td>
       <td>{{ segment.temperature_str }}</td>
     </tr>
     <tr>
       <td>AllTime</td>
-      <td>:</td>
       <td>{{segment.rankAllTime}}/{{segment.nbAttemptAllTime}}</td>
     </tr>
     <tr>
       <td>ThisYear</td>
-      <td>:</td>
       <td>{{segment.rankThisYear}}/{{segment.nbAttemptThisYear}}</td>
     </tr>
     </table>
@@ -75,20 +66,37 @@ Vue.component("segmentInActivityContextItem", {
   `,
   methods: {
     renderSegmentDefinition(segmentDefinition) {
-      this.$root.data_to_render_type = "segmentDefinition";
       this.$root.data_to_render = segmentDefinition;
+      this.$root.data_to_render_type = "segmentDefinition";
     },
   },
 });
 
 Vue.component("segmentInDefinitionContextItem", {
   props: ["segment"],
-  template:
-    '<li><a @click="renderActivity(segment.activity)">{{ segment.start_date_str }}</a>: {{ segment.duration_str }}</li>',
+  template: `
+    <tr>
+      <td>
+        <a @click="renderActivity(segment.activity)">{{ segment.start_date_str }}</a>
+      </td>
+      <td>
+        {{ segment.duration_str }}
+      </td>
+      <td>
+        {{ segment.heart_rate_str }}
+      </td>
+      <td>
+        {{ segment.cadence_str }}
+      </td>
+      <td>
+        {{ segment.temperature_str }}
+      </td>
+    </tr>
+    `,
   methods: {
     renderActivity(activity) {
-      this.$root.data_to_render_type = "activity";
       this.$root.data_to_render = activity;
+      this.$root.data_to_render_type = "activity";
     },
   },
 });
@@ -142,6 +150,7 @@ const prepareSegmentRendering = function prepareSegmentRendering(segment) {
     }
     return "";
   });
+
   return toReturn;
 };
 
@@ -165,6 +174,25 @@ const prepareActivityRendering = function prepareActivityRendering(activity) {
   return toReturn;
 };
 
+const prepareSegmentDefinitionRendering = async function prepareSegmentDefinitionRendering(
+  segmentDefinition
+) {
+  const stravaSegmentUrl = `https://www.strava.com/stream/segments/${segmentDefinition.strava_id}?streams%5B%5D=latlng`;
+
+  const response = await fetch(stravaSegmentUrl)
+    .then((res) => {
+      console.log(res);
+      return res.json();
+    })
+    .catch((err) => {
+      throw err;
+    });
+  console.log(reponse);
+  toReturn = segmentDefinition;
+  toReturn.coordinates = response;
+  return toReturn;
+};
+
 const app = new Vue({
   el: "#app",
 
@@ -179,6 +207,9 @@ const app = new Vue({
       .map(convertLoadedSegment)
       .map(prepareSegmentRendering),
     segmentDefinitions: segment_definitions,
+    // segmentDefinitions: segment_definitions.map(
+    //   prepareSegmentDefinitionRendering
+    // ),
     data_to_render: "",
     data_to_render_type: "",
     content: "",
@@ -215,7 +246,10 @@ const app = new Vue({
       }
       if (this.data_to_render_type === "segmentDefinition") {
         const { uid } = this.data_to_render;
-        return this.segments.filter((segment) => segment.segment_uid === uid);
+        return this.segments
+          .filter((segment) => segment.segment_uid === uid)
+          .concat()
+          .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
       }
       return ["unknown"];
     },
