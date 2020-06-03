@@ -34,14 +34,14 @@ body {
     "footer footer footer footer footer footer";
   grid-gap: 10px;
   grid-template-columns: 11em 18em auto;
-  grid-template-rows: 10vh 80vh 10vh;
+  grid-template-rows: 8vh 80vh 5vh;
   background-color: #f39621;
   padding: 10px;
 }
 
 .grid-container > div {
   background-color: rgba(255, 255, 255, 0.8);
-  padding: 20px 0;
+  /* padding: 20px 0; */
 }
 
 a:hover {
