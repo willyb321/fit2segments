@@ -218,6 +218,21 @@ const app = new Vue({
     content: "",
   },
   mounted: function mounted() {
+    const mymap = L.map("mapid").setView([44.936, 5.041], 12);
+    L.tileLayer(
+      "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+      {
+        attribution:
+          'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 18,
+        id: "mapbox/streets-v11",
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken:
+          "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
+      }
+    ).addTo(mymap);
+
     this.$root.data_to_render_type = "activity";
     this.$root.data_to_render = activities[activities.length - 1];
   },
