@@ -24,8 +24,55 @@ Vue.component("segmentDefinitionItem", {
 
 Vue.component("segmentInActivityContextItem", {
   props: ["segment"],
-  template:
-    '<li><a @click="renderSegmentDefinition(segment.definition)"> {{ segment.segment_name }}</a> ({{segment.definition.strava_id}}): {{ segment.duration_str }}, {{segment.rankAllTime}}/{{segment.nbAttemptAllTime}}, {{segment.rankThisYear}}/{{segment.nbAttemptThisYear}} </li> ',
+  template: `
+  <div>
+    <h5>
+      <a @click="renderSegmentDefinition(segment.definition)">
+        {{ segment.segment_name }} {{segment.definition.strava_id}}
+      </a>
+    </h5>
+    <table>
+    <tr>
+      <td>Duration</td>
+      <td>:</td>
+      <td>{{ segment.duration_str }}</td>
+    </tr>
+    <tr>
+      <td></td>
+    </tr>
+    <tr>
+      <td>HR</td>
+      <td>:</td>
+      <td>{{ segment.heart_rate_str }}</td>
+    </tr>
+    <tr>
+      <td>Cadence</td>
+      <td>:</td>
+      <td>{{ segment.cadence_str }}</td>
+    </tr>
+    <tr>
+      <td>Speed</td>
+      <td>:</td>
+      <td>{{ segment.speed_str }}</td>
+    </tr>
+    <tr>
+      <td>Temp.</td>
+      <td>:</td>
+      <td>{{ segment.temperature_str }}</td>
+    </tr>
+    <tr>
+      <td>AllTime</td>
+      <td>:</td>
+      <td>{{segment.rankAllTime}}/{{segment.nbAttemptAllTime}}</td>
+    </tr>
+    <tr>
+      <td>ThisYear</td>
+      <td>:</td>
+      <td>{{segment.rankThisYear}}/{{segment.nbAttemptThisYear}}</td>
+    </tr>
+    </table>
+  </div>
+  `,
   methods: {
     renderSegmentDefinition(segmentDefinition) {
       this.$root.data_to_render_type = "segmentDefinition";
@@ -72,6 +119,29 @@ const prepareSegmentRendering = function prepareSegmentRendering(segment) {
   toReturn.start_date_str = toReturn.start_time_str.substr(0, 10);
   toReturn.duration_str = segment.duration.toISOString().substr(11, 8);
   toReturn.year = toReturn.start_time_str.substring(0, 4);
+
+  [
+    toReturn.heart_rate_str,
+    toReturn.cadence_str,
+    toReturn.speed_str,
+    toReturn.temperature_str,
+  ] = [
+    toReturn.heart_rate,
+    toReturn.cadence,
+    toReturn.speed,
+    toReturn.temperature,
+  ].map((metric) => {
+    if (metric != null) {
+      const [avg, stdev, lower, upper] = [
+        metric.avg,
+        metric.stdev,
+        metric.lower,
+        metric.upper,
+      ].map((v) => (Number.isInteger(v) ? v : v.toFixed(1)));
+      return `${avg} ± ${stdev} ∈ [${lower}:${upper}]`;
+    }
+    return "";
+  });
   return toReturn;
 };
 
@@ -113,7 +183,7 @@ const app = new Vue({
     data_to_render_type: "",
     content: "",
   },
-  mounted: function () {
+  mounted: function mounted() {
     this.$root.data_to_render_type = "activity";
     this.$root.data_to_render = activities[activities.length - 1];
   },
