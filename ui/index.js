@@ -2,7 +2,7 @@
 Vue.component("activityItem", {
   props: ["activity"],
   template:
-    '<li><a @click="renderActivity(activity)">{{ activity.name }}</a></li>',
+    '<li><a title="Go to activity" @click="renderActivity(activity)">{{ activity.name }}</a></li>',
   methods: {
     renderActivity(activity) {
       this.$root.data_to_render_type = "activity";
@@ -14,7 +14,7 @@ Vue.component("activityItem", {
 Vue.component("segmentDefinitionItem", {
   props: ["segmentDefinition"],
   template:
-    '<li><a @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
+    '<li><a title="Go to segment" @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
   methods: {
     renderSegmentDefinition(segmentDefinition) {
       this.$root.data_to_render_type = "segmentDefinition";
@@ -28,7 +28,7 @@ Vue.component("segmentInActivityContextItem", {
   template: `
   <div>
     <h5>
-      <a @click="renderSegmentDefinition(segment.definition)">
+      <a title="Go to segment" @click="renderSegmentDefinition(segment.definition)">
         {{ segment.segment_name }} {{segment.definition.strava_id}}
       </a>
     </h5>
@@ -77,7 +77,7 @@ Vue.component("segmentInDefinitionContextItem", {
   template: `
     <tr>
       <td>
-        <a @click="renderActivity(segment.activity)">{{ segment.start_date_str }}</a>
+        <a title="Go to activity" @click="renderActivity(segment.activity)">{{ segment.start_date_str }}</a>
       </td>
       <td>
         {{ segment.duration_str }}
