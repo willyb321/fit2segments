@@ -33,7 +33,7 @@ body {
     "activities segment_definitions content content content content"
     "footer footer footer footer footer footer";
   grid-gap: 10px;
-  grid-template-columns: 11em 21em auto;
+  grid-template-columns: 11em 18em auto;
   grid-template-rows: 10vh 80vh 10vh;
   background-color: #f39621;
   padding: 10px;

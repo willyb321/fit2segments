@@ -89,6 +89,9 @@ Vue.component("segmentInDefinitionContextItem", {
         {{ segment.cadence_str }}
       </td>
       <td>
+        {{ segment.speed_str }}
+      </td>
+      <td>
         {{ segment.temperature_str }}
       </td>
     </tr>
