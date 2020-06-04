@@ -93,6 +93,8 @@ A simple VueJS-based viewer is provided in the `./ui` subdirectory:
 
 Enjoy.
 
+![WebUI](ui.png).
+
 # Note
 
 - Reading FIT files is slow. Once read, they are bz2's pickle'd in
