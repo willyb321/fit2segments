@@ -19,6 +19,20 @@ Vue.component("segmentDefinitionItem", {
     renderSegmentDefinition(segmentDefinition) {
       this.$root.data_to_render_type = "segmentDefinition";
       this.$root.data_to_render = segmentDefinition;
+
+      // const latlngs = [
+      //   [45.51, -122.68],
+      //   [37.77, -122.43],
+      //   [34.04, -118.2],
+      // ];
+
+      if (this.$root.polyline) {
+        this.$root.mymap.removeLayer(this.$root.polyline);
+      }
+      this.$root.polyline = L.polyline(segmentDefinition.latlng, {
+        color: "red",
+      }).addTo(this.$root.mymap);
+      this.$root.mymap.fitBounds(this.$root.polyline.getBounds());
     },
   },
 });
@@ -177,25 +191,6 @@ const prepareActivityRendering = function prepareActivityRendering(activity) {
   return toReturn;
 };
 
-const prepareSegmentDefinitionRendering = async function prepareSegmentDefinitionRendering(
-  segmentDefinition
-) {
-  const stravaSegmentUrl = `https://www.strava.com/stream/segments/${segmentDefinition.strava_id}?streams%5B%5D=latlng`;
-
-  const response = await fetch(stravaSegmentUrl)
-    .then((res) => {
-      console.log(res);
-      return res.json();
-    })
-    .catch((err) => {
-      throw err;
-    });
-  console.log(reponse);
-  toReturn = segmentDefinition;
-  toReturn.coordinates = response;
-  return toReturn;
-};
-
 const app = new Vue({
   el: "#app",
 
@@ -210,15 +205,16 @@ const app = new Vue({
       .map(convertLoadedSegment)
       .map(prepareSegmentRendering),
     segmentDefinitions: segment_definitions,
-    // segmentDefinitions: segment_definitions.map(
-    //   prepareSegmentDefinitionRendering
-    // ),
+    // mymap: L.map("mapid").setView([44.936, 5.041], 12),
+    mymap: null,
+    polyline: null,
     data_to_render: "",
     data_to_render_type: "",
     content: "",
   },
   mounted: function mounted() {
-    const mymap = L.map("mapid").setView([44.936, 5.041], 12);
+    // FIXME does not work but in data
+    this.$root.mymap = L.map("mapid").setView([44.936, 5.041], 12);
     L.tileLayer(
       "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
       {
@@ -231,7 +227,24 @@ const app = new Vue({
         accessToken:
           "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
       }
-    ).addTo(mymap);
+    ).addTo(this.$root.mymap);
+
+    // FIXME works but not in data
+
+    // const mymap2 = L.map("mapid").setView([44.936, 5.041], 12);
+    // L.tileLayer(
+    //   "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+    //   {
+    //     attribution:
+    //       'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    //     maxZoom: 18,
+    //     id: "mapbox/streets-v11",
+    //     tileSize: 512,
+    //     zoomOffset: -1,
+    //     accessToken:
+    //       "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
+    //   }
+    // ).addTo(mymap2);
 
     this.$root.data_to_render_type = "activity";
     this.$root.data_to_render = activities[activities.length - 1];

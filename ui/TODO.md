@@ -4,9 +4,8 @@
 - Default to summary "everything": all distance, all time, etc.
 - Date / daterange selector → summary
 - Make filtering my `gps_available` optional
-- show maps, which requires either:
-  - access to FIT `track_points`, can be made available as JSON?
-  - get them from strava directly, at least for segments?
+- show maps for activities, which requires FIT `track_points` to be made available as
+  JSON?
 
 # Styling
 
