@@ -1,13 +1,30 @@
+const updatePolyline = function updatePolyline(app, coordinates) {
+  if (app.$root.polyline) {
+    app.$root.mymap.removeLayer(app.$root.polyline);
+  }
+  app.$root.polyline = L.polyline(coordinates, {
+    color: "red",
+  }).addTo(app.$root.mymap);
+  app.$root.mymap.fitBounds(app.$root.polyline.getBounds());
+};
+
+const renderActivity = function renderActivity(activity) {
+  const fileref = document.createElement("script");
+  fileref.setAttribute("type", "text/javascript");
+  fileref.setAttribute("src", "userdata/2020-05-21-08-11-47.json");
+  document.getElementsByTagName("head")[0].appendChild(fileref);
+  this.$root.data_to_render_type = "activity";
+  this.$root.data_to_render = activity;
+  updatePolyline(this.$root, activityGPSPoints);
+};
+
 // Corresponding items
 Vue.component("activityItem", {
   props: ["activity"],
   template:
     '<li><a title="Go to activity" @click="renderActivity(activity)">{{ activity.name }}</a></li>',
   methods: {
-    renderActivity(activity) {
-      this.$root.data_to_render_type = "activity";
-      this.$root.data_to_render = activity;
-    },
+    renderActivity,
   },
 });
 
@@ -16,14 +33,7 @@ const renderSegmentDefinition = function renderSegmentDefinition(
 ) {
   this.$root.data_to_render_type = "segmentDefinition";
   this.$root.data_to_render = segmentDefinition;
-
-  if (this.$root.polyline) {
-    this.$root.mymap.removeLayer(this.$root.polyline);
-  }
-  this.$root.polyline = L.polyline(segmentDefinition.latlng, {
-    color: "red",
-  }).addTo(this.$root.mymap);
-  this.$root.mymap.fitBounds(this.$root.polyline.getBounds());
+  updatePolyline(this.$root, segmentDefinition.latlng);
 };
 
 Vue.component("segmentDefinitionItem", {
@@ -32,6 +42,7 @@ Vue.component("segmentDefinitionItem", {
     '<li><a title="Go to segment" @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
   methods: {
     renderSegmentDefinition,
+    updatePolyline,
   },
 });
 
@@ -106,10 +117,7 @@ Vue.component("segmentInDefinitionContextItem", {
     </tr>
     `,
   methods: {
-    renderActivity(activity) {
-      this.$root.data_to_render = activity;
-      this.$root.data_to_render_type = "activity";
-    },
+    renderActivity,
   },
 });
 
@@ -200,7 +208,6 @@ const app = new Vue({
       .map(convertLoadedSegment)
       .map(prepareSegmentRendering),
     segmentDefinitions: segment_definitions,
-    // mymap: L.map("mapid").setView([44.936, 5.041], 12),
     mymap: null,
     polyline: null,
     data_to_render: "",
@@ -224,25 +231,7 @@ const app = new Vue({
       }
     ).addTo(this.$root.mymap);
 
-    // FIXME works but not in data
-
-    // const mymap2 = L.map("mapid").setView([44.936, 5.041], 12);
-    // L.tileLayer(
-    //   "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
-    //   {
-    //     attribution:
-    //       'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    //     maxZoom: 18,
-    //     id: "mapbox/streets-v11",
-    //     tileSize: 512,
-    //     zoomOffset: -1,
-    //     accessToken:
-    //       "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
-    //   }
-    // ).addTo(mymap2);
-
-    this.$root.data_to_render_type = "activity";
-    this.$root.data_to_render = activities[activities.length - 1];
+    // renderActivity(activities[activities.length - 1]);
   },
   computed: {
     context() {
