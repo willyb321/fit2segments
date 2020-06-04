@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
 
 def get_segment_start_stops(
     seg_id: int,
-) -> Tuple[Segment_definition_point, Segment_definition_point]:
+) -> Tuple[Segment_definition_point, Segment_definition_point, List[List[float]]]:
     data_req = requests.get(
         (f"https://www.strava.com/stream/segments/{seg_id}" f"?streams%5B%5D=latlng")
     )
@@ -64,7 +64,7 @@ def get_segment_start_stops(
         tolerance=5,
     )
 
-    return (start, stop)
+    return (start, stop, data["latlng"])
 
 
 def get_segment_public_metadata(seg_id: int) -> Dict[str, Any]:
@@ -117,7 +117,7 @@ def import_from_strava(filename: str) -> List[Segment_definition]:
         seg_id: int = int(strava_segment["strava_segment_id"])
         logger.warning("Importing segment %s", seg_name)
 
-        start, stop = get_segment_start_stops(seg_id)
+        start, stop, latlng = get_segment_start_stops(seg_id)
         metadata = get_segment_public_metadata(seg_id)
         new_segment_definition: Segment_definition = Segment_definition(
             debug=False,
@@ -125,6 +125,7 @@ def import_from_strava(filename: str) -> List[Segment_definition]:
             start=start,
             stop=stop,
             strava_id=metadata["strava_id"],
+            latlng=latlng,
         )
         to_return.append(new_segment_definition)
 

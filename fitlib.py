@@ -68,6 +68,7 @@ class Segment_definition:
     debug: bool
     name: str
     strava_id: Optional[int]
+    latlng: Optional[List[List[float]]]
     start: Segment_definition_point
     stop: Segment_definition_point
     uid: str = field(init=False)
