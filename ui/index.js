@@ -11,29 +11,27 @@ Vue.component("activityItem", {
   },
 });
 
+const renderSegmentDefinition = function renderSegmentDefinition(
+  segmentDefinition
+) {
+  this.$root.data_to_render_type = "segmentDefinition";
+  this.$root.data_to_render = segmentDefinition;
+
+  if (this.$root.polyline) {
+    this.$root.mymap.removeLayer(this.$root.polyline);
+  }
+  this.$root.polyline = L.polyline(segmentDefinition.latlng, {
+    color: "red",
+  }).addTo(this.$root.mymap);
+  this.$root.mymap.fitBounds(this.$root.polyline.getBounds());
+};
+
 Vue.component("segmentDefinitionItem", {
   props: ["segmentDefinition"],
   template:
     '<li><a title="Go to segment" @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
   methods: {
-    renderSegmentDefinition(segmentDefinition) {
-      this.$root.data_to_render_type = "segmentDefinition";
-      this.$root.data_to_render = segmentDefinition;
-
-      // const latlngs = [
-      //   [45.51, -122.68],
-      //   [37.77, -122.43],
-      //   [34.04, -118.2],
-      // ];
-
-      if (this.$root.polyline) {
-        this.$root.mymap.removeLayer(this.$root.polyline);
-      }
-      this.$root.polyline = L.polyline(segmentDefinition.latlng, {
-        color: "red",
-      }).addTo(this.$root.mymap);
-      this.$root.mymap.fitBounds(this.$root.polyline.getBounds());
-    },
+    renderSegmentDefinition,
   },
 });
 
@@ -79,10 +77,7 @@ Vue.component("segmentInActivityContextItem", {
   </div>
   `,
   methods: {
-    renderSegmentDefinition(segmentDefinition) {
-      this.$root.data_to_render = segmentDefinition;
-      this.$root.data_to_render_type = "segmentDefinition";
-    },
+    renderSegmentDefinition,
   },
 });
 
