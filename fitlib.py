@@ -16,6 +16,7 @@ DEFAULT_CACHE_PATH = str(Path.home() / ".cache" / "fit2segments")
 DEFAULT_SEGMENT_DEFINITIONS_FILENAME = "segment_definitions.json"
 DEFAULT_SEGMENTS_FILENAME = "segments.json"
 DEFAULT_ACTIVITIES_FILENAME = "activities.json"
+DEFAULT_UI_BASEDIR = "ui"
 
 # https://docs.microsoft.com/en-us/previous-versions/windows/embedded/cc510650(v=msdn.10)
 
@@ -144,9 +145,11 @@ def load_file(fitfilename: str, cache_path_name: Optional[str] = None) -> Track:
 
     cached_file = cache_path / (Path(fitfilename).stem + ".pbz2")
 
+    activityname = filename2activityname(fitfilename)
+
     if not cached_file.exists():
         to_write: Track = Track(
-            name=filename2activityname(fitfilename),
+            name=activityname,
             track_points=[
                 from_dict(data_class=Track_point, data=data.get_values())
 
@@ -158,6 +161,32 @@ def load_file(fitfilename: str, cache_path_name: Optional[str] = None) -> Track:
 
     with bz2.BZ2File(cached_file, "rb") as f_handler:
         to_return: Track = pickle.load(f_handler)
+
+    ui_activity_dir = Path(DEFAULT_UI_BASEDIR) / "userdata"
+
+    if not ui_activity_dir.exists():
+        ui_activity_dir.mkdir(parents=True)
+    ui_file = ui_activity_dir / f"{filename2activityname(fitfilename)}.json"
+
+    if not ui_file.exists():
+        with ui_file.open("w") as f_handler:
+            json.dump(
+                [
+                    [
+                        semicircles_to_degrees(tp.position_lat),
+                        semicircles_to_degrees(tp.position_long),
+                    ]
+
+                    for tp in to_return.track_points
+
+                    if hasattr(tp, "position_lat")
+                    and tp.position_lat
+                    and hasattr(tp, "position_long")
+                    and tp.position_long
+                ],
+                f_handler,
+                indent=True,
+            )
 
     return to_return
 
@@ -305,7 +334,7 @@ def write_data_js(
         "segments": [asdict(s) for s in segments],
     }
 
-    with open("ui/data.js", "w") as output_handler:
+    with open(f"{DEFAULT_UI_BASEDIR}/userdata/data.js", "w") as output_handler:
         for source_name, content in data.items():
             output_handler.write(f"{source_name} = ")
 

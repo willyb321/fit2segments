@@ -1,21 +1,11 @@
-const updatePolyline = function updatePolyline(app, coordinates) {
-  if (app.$root.polyline) {
-    app.$root.mymap.removeLayer(app.$root.polyline);
-  }
-  app.$root.polyline = L.polyline(coordinates, {
-    color: "red",
-  }).addTo(app.$root.mymap);
-  app.$root.mymap.fitBounds(app.$root.polyline.getBounds());
-};
-
 const renderActivity = function renderActivity(activity) {
-  const fileref = document.createElement("script");
-  fileref.setAttribute("type", "text/javascript");
-  fileref.setAttribute("src", "userdata/2020-05-21-08-11-47.json");
-  document.getElementsByTagName("head")[0].appendChild(fileref);
-  this.$root.data_to_render_type = "activity";
-  this.$root.data_to_render = activity;
-  updatePolyline(this.$root, activityGPSPoints);
+  fetch(`userdata/${activity.name}.json`)
+    .then((response) => response.json())
+    .then((data) => {
+      this.$root.track = data;
+      this.$root.data_to_render_type = "activity";
+      this.$root.data_to_render = activity;
+    });
 };
 
 // Corresponding items
@@ -33,7 +23,7 @@ const renderSegmentDefinition = function renderSegmentDefinition(
 ) {
   this.$root.data_to_render_type = "segmentDefinition";
   this.$root.data_to_render = segmentDefinition;
-  updatePolyline(this.$root, segmentDefinition.latlng);
+  this.$root.track = segmentDefinition.latlng;
 };
 
 Vue.component("segmentDefinitionItem", {
@@ -42,7 +32,6 @@ Vue.component("segmentDefinitionItem", {
     '<li><a title="Go to segment" @click="renderSegmentDefinition(segmentDefinition)">{{ segmentDefinition.name }}</a></li>',
   methods: {
     renderSegmentDefinition,
-    updatePolyline,
   },
 });
 
@@ -194,6 +183,19 @@ const prepareActivityRendering = function prepareActivityRendering(activity) {
   return toReturn;
 };
 
+const updated = function updated() {
+  // On DOM update, update polyline and map, if necessary
+  if (this.$root.polyline) {
+    this.$root.mymap.removeLayer(this.$root.polyline);
+  }
+  if (this.$root.track) {
+    this.$root.polyline = L.polyline(this.$root.track, {
+      color: "red",
+    }).addTo(this.$root.mymap);
+    this.$root.mymap.fitBounds(this.$root.polyline.getBounds());
+  }
+};
+
 const app = new Vue({
   el: "#app",
 
@@ -210,6 +212,7 @@ const app = new Vue({
     segmentDefinitions: segment_definitions,
     mymap: null,
     polyline: null,
+    track: null,
     data_to_render: "",
     data_to_render_type: "",
     content: "",
@@ -230,7 +233,6 @@ const app = new Vue({
           "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
       }
     ).addTo(this.$root.mymap);
-
     // renderActivity(activities[activities.length - 1]);
   },
   computed: {
@@ -269,4 +271,5 @@ const app = new Vue({
       return ["unknown"];
     },
   },
+  updated: updated,
 });

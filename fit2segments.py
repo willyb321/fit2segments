@@ -354,10 +354,15 @@ def match(
                 )
             )
 
-            segment_timing_handler.write(
-                "%s,%2.2f,%3.2f\n"
-                % (track.name, virtual_distance, virtual_timing.total_seconds() / 60)
-            )
+            if args.verbose:
+                segment_timing_handler.write(
+                    "%s,%2.2f,%3.2f\n"
+                    % (
+                        track.name,
+                        virtual_distance,
+                        virtual_timing.total_seconds() / 60,
+                    )
+                )
             logger.warning(
                 "%s : %s found %1.2f km / %s",
                 track.name,
@@ -404,10 +409,8 @@ def update_storage(
         # First, we need to check whether the activity has already already been
         # processed, and if it's the case, if new segment definitions have been added
         # since this previous processing.
-
-        matching_activities = [
-            a for a in activities if a.name == filename2activityname(filename)
-        ]
+        expected_name: str = filename2activityname(filename)
+        matching_activities = [a for a in activities if a.name == expected_name]
         assert len(matching_activities) == 0 or len(matching_activities) == 1
         matching_activity: Union[Activity, None] = None
 

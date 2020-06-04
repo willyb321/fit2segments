@@ -4,8 +4,6 @@
 - Default to summary "everything": all distance, all time, etc.
 - Date / daterange selector → summary
 - Make filtering my `gps_available` optional
-- show maps for activities, which requires FIT `track_points` to be made available as
-  JSON?
 
 # Styling
 
@@ -13,5 +11,5 @@
 
 # Code organization
 
-- https://cli.vuejs.org/guide/
-- https://www.jesuisundev.com/comprendre-vuejs-en-5-minutes/
+- <https://cli.vuejs.org/guide/>
+- <https://www.jesuisundev.com/comprendre-vuejs-en-5-minutes/>
