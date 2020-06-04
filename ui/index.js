@@ -229,8 +229,7 @@ const app = new Vue({
         id: "mapbox/streets-v11",
         tileSize: 512,
         zoomOffset: -1,
-        accessToken:
-          "pk.eyJ1IjoiYWhtb3Bob2UiLCJhIjoiY2thenE1amFiMDBqeTJzbXR3eGozZ244dyJ9.vaCiRX2sTWjSgG71qOLhBQ",
+        accessToken: accessToken,
       }
     ).addTo(this.$root.mymap);
     // renderActivity(activities[activities.length - 1]);

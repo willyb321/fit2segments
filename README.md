@@ -88,6 +88,8 @@ Segment    : col des Limouches from the D70/D68
 
 A simple VueJS-based viewer is provided in the `./ui` subdirectory:
 
+- get a free mapbox token, and put it in `./ui/userdata/accessToken.js` (see
+  `./ui/userdata/accessToken.js.example`)
 - start the web server with `./start_server.sh`
 - open your browser `http://localhost:8000/index.html`
 
