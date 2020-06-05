@@ -75,7 +75,7 @@ class Segment_definition:
     uid: str = field(init=False)
 
     def __post_init__(self) -> None:
-        self.uid = sha256(f"{self.name}-{self.start}-{self.stop}".encode()).hexdigest()
+        self.uid = sha256(f"{self.start}-{self.stop}".encode()).hexdigest()
 
 
 @dataclass

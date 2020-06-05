@@ -5,6 +5,7 @@
 import argparse
 import json
 import logging
+import re
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
@@ -73,7 +74,8 @@ def get_segment_public_metadata(seg_id: int) -> Dict[str, Any]:
     assert metadata_req.status_code == 200
     soup = BeautifulSoup(metadata_req.text, "html.parser")
 
-    name = soup.find(id="js-full-name").text
+    strava_name = soup.find(id="js-full-name").text
+    name: str = re.sub(r"\W+", " ", strava_name).strip().title()
     stats = [t.text for t in soup.find_all("b", class_="stat-text")]
     assert stats[0].endswith("km")
     assert stats[1].endswith("%")
