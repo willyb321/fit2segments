@@ -204,7 +204,7 @@ def get_segment_tag(segment_name: str) -> str:
 
 
 def get_segment_timing_handler(segment: Segment_definition) -> TextIO:
-    debug_file = Path("%s_timings.csv" % get_segment_tag(segment.name))
+    debug_file = Path("csv/%s_timings.csv" % get_segment_tag(segment.name))
 
     if not debug_file.exists():
         to_return = debug_file.open("w")
@@ -215,7 +215,7 @@ def get_segment_timing_handler(segment: Segment_definition) -> TextIO:
 
 
 def get_segment_debug_handler(segment: Segment_definition) -> TextIO:
-    debug_file = Path("%s_debug_start.csv" % get_segment_tag(segment.name))
+    debug_file = Path("csv/%s_debug_start.csv" % get_segment_tag(segment.name))
 
     if not debug_file.exists():
         to_return = debug_file.open("w")

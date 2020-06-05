@@ -270,7 +270,11 @@ def match(
             segment_debug_handler: TextIO = get_segment_debug_handler(
                 segment_definition
             )
-        segment_timing_handler: TextIO = get_segment_timing_handler(segment_definition)
+
+        if args.verbose:
+            segment_timing_handler: TextIO = get_segment_timing_handler(
+                segment_definition
+            )
 
         logger.debug("Looking for start points")
 
