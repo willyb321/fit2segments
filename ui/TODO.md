@@ -1,5 +1,6 @@
 # Functions
 
+- Autodetect nested segments
 - Make the activities/column searchable
 - Default to summary "everything": all distance, all time, etc.
 - Date / daterange selector → summary

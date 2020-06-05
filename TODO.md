@@ -1,5 +1,10 @@
+# Misc
+
+- Add support for GPX files
+
 # Text UI
 
+- Autodetect nested segments
 - Add some interactivity, e.g. with [1-9] to show details about segments and
   activities
 
