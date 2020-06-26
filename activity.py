@@ -51,6 +51,7 @@ def render_activity_summary(activity: Activity) -> None:
     print("*" * 80)
     print(f"Date: {activity.start_time}")
     print(f"Duration: {str(activity.duration)}")
+    print(f"Distance: {activity.distance/1000:2.2f} km")
     print("*" * 80)
 
 
