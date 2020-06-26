@@ -243,18 +243,21 @@ const app = new Vue({
           )
           .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time))
           .map((targetsegment) => {
-            const allTime = this.segments.filter(
-              (segment) => segment.segment_uid === targetsegment.segment_uid
-            );
+            const allTime = this.segments
+              .filter(
+                (segment) => segment.segment_uid === targetsegment.segment_uid
+              )
+              .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
+
             const thisYear = allTime.filter(
               (segment) => segment.year === targetsegment.year
             );
 
             const toReturn = targetsegment;
-            toReturn.rankAllTime = allTime.indexOf(targetsegment);
+            toReturn.rankAllTime = allTime.indexOf(targetsegment) + 1;
             toReturn.nbAttemptAllTime = allTime.length;
             [toReturn.bestAllTime] = allTime;
-            toReturn.rankThisYear = thisYear.indexOf(targetsegment);
+            toReturn.rankThisYear = thisYear.indexOf(targetsegment) + 1;
             toReturn.nbAttemptThisYear = thisYear.length;
             [toReturn.bestThisYear] = thisYear;
             return toReturn;
