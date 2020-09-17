@@ -2,4 +2,4 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-python -m http.server
+python -m http.server --bind 127.0.0.1
