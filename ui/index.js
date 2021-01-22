@@ -46,31 +46,23 @@ Vue.component("segmentInActivityContextItem", {
     </h5>
     <table>
     <tr>
-      <td>Duration</td>
+      <td>Duration (HH:MM:SS)</td>
       <td>{{ segment.duration_str }}</td>
     </tr>
     <tr>
-      <td>HR</td>
-      <td>{{ segment.heart_rate_str }}</td>
-    </tr>
-    <tr>
-      <td>Cadence</td>
-      <td>{{ segment.cadence_str }}</td>
-    </tr>
-    <tr>
-      <td>Speed</td>
+      <td>Speed (km/h)</td>
       <td>{{ segment.speed_str }}</td>
     </tr>
     <tr>
-      <td>Temp.</td>
+      <td>Temperature (°C)</td>
       <td>{{ segment.temperature_str }}</td>
     </tr>
     <tr>
-      <td>AllTime</td>
+      <td>Rank (All Time)</td>
       <td>{{segment.rankAllTime}}/{{segment.nbAttemptAllTime}}</td>
     </tr>
     <tr>
-      <td>ThisYear</td>
+      <td>Rank (This Year)</td>
       <td>{{segment.rankThisYear}}/{{segment.nbAttemptThisYear}}</td>
     </tr>
     </table>
@@ -90,12 +82,6 @@ Vue.component("segmentInDefinitionContextItem", {
       </td>
       <td>
         {{ segment.duration_str }}
-      </td>
-      <td>
-        {{ segment.heart_rate_str }}
-      </td>
-      <td>
-        {{ segment.cadence_str }}
       </td>
       <td>
         {{ segment.speed_str }}
@@ -138,13 +124,9 @@ const prepareSegmentRendering = function prepareSegmentRendering(segment) {
   toReturn.year = toReturn.start_time_str.substring(0, 4);
 
   [
-    toReturn.heart_rate_str,
-    toReturn.cadence_str,
     toReturn.speed_str,
     toReturn.temperature_str,
   ] = [
-    toReturn.heart_rate,
-    toReturn.cadence,
     toReturn.speed,
     toReturn.temperature,
   ].map((metric) => {
@@ -198,7 +180,6 @@ const updated = function updated() {
 
 const app = new Vue({
   el: "#app",
-
   data: {
     activities: activities
       .filter((a) => a.gps_available)
@@ -207,6 +188,7 @@ const app = new Vue({
       .map(prepareActivityRendering),
     segments: segments
       .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration))
+      // .sort((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time))
       .map(convertLoadedSegment)
       .map(prepareSegmentRendering),
     segmentDefinitions: segment_definitions,
@@ -219,7 +201,7 @@ const app = new Vue({
   },
   mounted: function mounted() {
     // FIXME does not work but in data
-    this.$root.mymap = L.map("mapid").setView([44.936, 5.041], 12);
+    this.$root.mymap = L.map("mapid").setView([-34.0425275, 151.1227849], 12);
     L.tileLayer(
       "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
       {
@@ -265,10 +247,16 @@ const app = new Vue({
       }
       if (this.data_to_render_type === "segmentDefinition") {
         const { uid } = this.data_to_render;
-        return this.segments
+        const segments = [];
+        segments[0] = this.segments
+        .filter((segment) => segment.segment_uid === uid)
+        .concat()
+        .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
+        segments[1] = this.segments
           .filter((segment) => segment.segment_uid === uid)
           .concat()
-          .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
+          .sort((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time));
+        return segments;
       }
       return ["unknown"];
     },

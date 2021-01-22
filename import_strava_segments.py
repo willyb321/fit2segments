@@ -20,6 +20,10 @@ requests_cache.install_cache(
     str(Path.home() / ".cache" / "fit2segments" / "requests_cache")
 )
 
+headers = {
+    "cookie": "explore_activity_type=cycling; G_ENABLED_IDPS=google; _ga=GA1.2.615208174.1605042358; sp=2aa4bf96-50a8-42dd-bc02-355203e01fbb; _strava4_session=1l7jtacu7dh51gkr8mcfg2aogmrc9c4s; ajs_anonymous_id=%22b3b72ac5-7a62-4c74-b7cc-bcdd53836b88%22; _sp_id.f55d=61988c17-863b-41c0-b9cb-1ec43a47f6bf.1607287259.1.1607287383.1607287259.f5c8d595-1214-4aba-9042-dd73a289c8a6; _gid=GA1.2.1038856937.1611197897; iterableEndUserId=wbwilliam7%40gmail.com; iterableEmailCampaignId=1393220; iterableTemplateId=1934428; iterableMessageId=e49f39f0b6a4469c9ea8461344553d04; _sp_ses.047d=*; elevate_daily_connection_done=true; elevate_athlete_update_done=true; fbm_284597785309=base_domain=.www.strava.com; _sp_id.047d=eb14ffe9-6f80-48ea-a580-99567a3b3682.1602189983.45.1611263211.1611203545.3f221abb-04fb-4e7c-ab8e-4ea0f4339271; fbsr_284597785309=HpPGWG7UJ6j6tZFoj7ekjCF3q4sSG55P6kxrJIhd3HQ.eyJ1c2VyX2lkIjoiMzI2NTk5NTk5MzQzMDgyNyIsImNvZGUiOiJBUUJmN2FEbDdyTkxCZVpUWTVqZVV6LXlRZE9VSXJjXzF1NHZvcUVPNFRjbTQ4N2xqdnpOT0VlNkVqQ1J3QXFyY0ZIQ3FQdFd6R0ZOLWJjZmFlVXk1YmtNNkxtX0NWQlhKUU9ncnNqc09MalZDWmo1bE15NVFZQWdkbUxkV25lbjRGc3VKd3BKdk84QUs5Wm91XzlsVlh5Mk9DaUJxS0daR1hmeFRHWGREaU9FaVhvb1lncTNGY1ctSTQzVVNPbUE3eV9zUlBOd3o2M1ZMTmNUbXJBUnNZR1N0ZWFiTFBJLVRVR3lRUUZSSUVQU183Si0zakJpSmdaZnlVcWNhR0Q4VTl6bTdwRml1cV83WnRHS3R4TUZIR0ZaVGxPSmc1cGVZWE42NEZYd3hWOE9pYnVmTHU1MEZlRUhpSFdUbFVDR2owZ3dBMzAyMWVWeHNGV2NQb1dOOUkwNSIsIm9hdXRoX3Rva2VuIjoiRUFBQUFRa05aQWt0MEJBSktaQURXbnlUbnRZTVVqNGVoYjlEbGl1MWtLU3M0d2djUmZyMUd1MmtVaUN3Z2dXVUtuenFlSzdya2lLZlBYVWJJenhMazAyM1N6WW16ZVF1VTNuN3ltU2RiNGFIdlVCV05VbkVFYmNHSjFNTDRYakl1b1dWbXhaQ2NtcVpDTnBJWkM2T1pDQW8zbkdsTDYyVGF4VWQwZ1lCaEdjWkFZWDRXNzdseFhPM3EyUENHa09BSEwxQlIwYVR0a2ZVSjZydzBjNVdKR1FjIiwiYWxnb3JpdGhtIjoiSE1BQy1TSEEyNTYiLCJpc3N1ZWRfYXQiOjE2MTEyNjMyMTJ9"
+}
+
 
 def parse_args() -> argparse.Namespace:
     """ Call me with args = parse_args() """
@@ -46,10 +50,13 @@ def parse_args() -> argparse.Namespace:
 def get_segment_start_stops(
     seg_id: int,
 ) -> Tuple[Segment_definition_point, Segment_definition_point, List[List[float]]]:
+    print(seg_id)
+    
     data_req = requests.get(
-        (f"https://www.strava.com/stream/segments/{seg_id}" f"?streams%5B%5D=latlng")
+        (f"https://www.strava.com/stream/segments/{seg_id}" f"?streams%5B%5D=latlng"), headers=headers
     )
-    assert data_req.status_code == 200
+    # assert data_req.status_code == 200
+    print(data_req.text)
     data = data_req.json()
 
     start = Segment_definition_point(
@@ -70,7 +77,7 @@ def get_segment_start_stops(
 
 def get_segment_public_metadata(seg_id: int) -> Dict[str, Any]:
 
-    metadata_req = requests.get(f"https://www.strava.com/segments/{seg_id}")
+    metadata_req = requests.get(f"https://www.strava.com/segments/{seg_id}", headers=headers)
     assert metadata_req.status_code == 200
     soup = BeautifulSoup(metadata_req.text, "html.parser")
 
