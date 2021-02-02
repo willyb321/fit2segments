@@ -249,13 +249,13 @@ const app = new Vue({
         const { uid } = this.data_to_render;
         const segments = [];
         segments[0] = this.segments
-        .filter((segment) => segment.segment_uid === uid)
-        .concat()
-        .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
-        segments[1] = this.segments
           .filter((segment) => segment.segment_uid === uid)
           .concat()
           .sort((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time));
+          segments[1] = this.segments
+          .filter((segment) => segment.segment_uid === uid)
+          .concat()
+          .sort((a, b) => Date.parse(a.duration) - Date.parse(b.duration));
         return segments;
       }
       return ["unknown"];

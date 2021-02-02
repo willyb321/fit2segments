@@ -4,3 +4,5 @@
 activities
 csv/*
 __pycache__
+gopro_gps
+*.bak
